@@ -16,35 +16,57 @@ st.set_page_config(
 
 # Professional CSS styling
 st.markdown("""
+<!-- Load Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
 <style>
     /* Import professional fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    /* Global styling */
-    html, body, .stApp, .main, .app-header, .custom-card, .app-footer {
-       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* Restore Material Icons Font (fix icon showing as text) */
+    .material-icons,
+    .material-icons-outlined,
+    .material-icons-round,
+    .material-icons-sharp,
+    .material-icons-two-tone,
+    [class^="material-icons"] {
+        font-family: 'Material Icons' !important;
+        speak: none;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        letter-spacing: normal;
+        -webkit-font-feature-settings: 'liga';
+        -webkit-font-smoothing: antialiased;
     }
-    
+
+    /* Global styling */
+    html, body, .stApp {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+
     /* Hide default Streamlit elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
+
     /* Fix sidebar toggle button */
     [data-testid="collapsedControl"] {
         display: block !important;
         visibility: visible !important;
     }
-    
+
     [data-testid="collapsedControl"] svg {
         display: block !important;
     }
-    
+
     /* Main container */
     .main {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         padding: 0 !important;
     }
-    
+
     /* Custom header */
     .app-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -53,21 +75,21 @@ st.markdown("""
         color: white;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    
+
     .app-title {
         font-size: 2.5rem;
         font-weight: 700;
         margin: 0;
         letter-spacing: -0.5px;
     }
-    
+
     .app-subtitle {
         font-size: 1.1rem;
         font-weight: 400;
         margin-top: 0.5rem;
         opacity: 0.95;
     }
-    
+
     /* Card styling */
     .custom-card {
         background: white;
@@ -78,12 +100,12 @@ st.markdown("""
         border: 1px solid #e8ecef;
         transition: all 0.3s ease;
     }
-    
+
     .custom-card:hover {
         box-shadow: 0 4px 16px rgba(0,0,0,0.12);
         transform: translateY(-2px);
     }
-    
+
     .card-header {
         font-size: 1.25rem;
         font-weight: 600;
@@ -92,8 +114,8 @@ st.markdown("""
         padding-bottom: 0.75rem;
         border-bottom: 2px solid #f7fafc;
     }
-    
-    /* Metric cards - minimal style */
+
+    /* Metric cards */
     .metric-card {
         background: transparent;
         border-radius: 0;
@@ -102,18 +124,18 @@ st.markdown("""
         text-align: center;
         transition: all 0.3s ease;
     }
-    
+
     .metric-card:hover {
         transform: translateY(-2px);
     }
-    
+
     .metric-value {
         font-size: 2.5rem;
         font-weight: 700;
         margin: 0.5rem 0;
         color: #1a202c;
     }
-    
+
     .metric-label {
         font-size: 0.85rem;
         font-weight: 600;
@@ -121,21 +143,12 @@ st.markdown("""
         letter-spacing: 1px;
         color: #718096;
     }
-    
-    /* Metric variants with text colors only */
-    .metric-card.success .metric-value {
-        color: #059669;
-    }
-    
-    .metric-card.warning .metric-value {
-        color: #dc2626;
-    }
-    
-    .metric-card.info .metric-value {
-        color: #2563eb;
-    }
-    
-    /* Upload zone styling */
+
+    .metric-card.success .metric-value { color: #059669; }
+    .metric-card.warning .metric-value { color: #dc2626; }
+    .metric-card.info .metric-value { color: #2563eb; }
+
+    /* Upload zone */
     .upload-zone {
         border: 2px dashed #cbd5e0;
         border-radius: 12px;
@@ -145,30 +158,30 @@ st.markdown("""
         transition: all 0.3s ease;
         cursor: pointer;
     }
-    
+
     .upload-zone:hover {
         border-color: #667eea;
         background: #edf2f7;
     }
-    
+
     .upload-icon {
         font-size: 3rem;
         color: #a0aec0;
         margin-bottom: 1rem;
     }
-    
+
     .upload-text {
         color: #4a5568;
         font-weight: 500;
         margin-bottom: 0.5rem;
     }
-    
+
     .upload-subtext {
         color: #718096;
         font-size: 0.875rem;
     }
-    
-    /* Button styling */
+
+    /* Button */
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -180,56 +193,56 @@ st.markdown("""
         transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
-    
+
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
-    
-    /* Sidebar styling */
-    .css-1d391kg, [data-testid="stSidebar"] {
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
         background: white;
         border-right: 1px solid #e8ecef;
     }
-    
-    /* Input styling */
-    .stNumberInput > div > div > input,
-    .stSelectbox > div > div,
-    .stTextInput > div > div > input {
+
+    /* Inputs */
+    .stNumberInput input,
+    .stSelectbox div,
+    .stTextInput input {
         border-radius: 8px;
         border: 1px solid #e2e8f0;
         padding: 0.5rem 0.75rem;
         transition: all 0.2s ease;
     }
-    
-    .stNumberInput > div > div > input:focus,
-    .stSelectbox > div > div:focus,
-    .stTextInput > div > div > input:focus {
+
+    .stNumberInput input:focus,
+    .stSelectbox div:focus,
+    .stTextInput input:focus {
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-    
-    /* Tab styling */
+
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background: white;
         border-radius: 8px;
         padding: 0.5rem;
     }
-    
+
     .stTabs [data-baseweb="tab"] {
         border-radius: 6px;
         padding: 0.5rem 1.5rem;
         font-weight: 500;
         transition: all 0.2s ease;
     }
-    
+
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
     }
-    
-    /* Alert boxes */
+
+    /* Alerts */
     .success-alert {
         background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
         border-radius: 8px;
@@ -239,7 +252,7 @@ st.markdown("""
         border-left: 4px solid #38a169;
         margin: 1rem 0;
     }
-    
+
     .warning-alert {
         background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
         border-radius: 8px;
@@ -249,7 +262,7 @@ st.markdown("""
         border-left: 4px solid #dd6b20;
         margin: 1rem 0;
     }
-    
+
     .info-alert {
         background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
         border-radius: 8px;
@@ -259,20 +272,13 @@ st.markdown("""
         border-left: 4px solid #3b82f6;
         margin: 1rem 0;
     }
-    
-    /* DataFrames */
-    .dataframe {
-        border: none !important;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    
+
     /* Progress bar */
     .stProgress > div > div > div {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 4px;
     }
-    
+
     /* Footer */
     .app-footer {
         text-align: center;
@@ -283,39 +289,19 @@ st.markdown("""
         margin-top: 3rem;
         border: 1px solid #e8ecef;
     }
-    
+
     .footer-tagline {
         font-size: 1rem;
         font-weight: 500;
         color: #4a5568;
         margin-bottom: 0.5rem;
     }
-    
+
     .footer-credits {
         font-size: 0.875rem;
         color: #718096;
     }
-    
-    /* Status badges */
-    .status-badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .status-matched {
-        background: #c6f6d5;
-        color: #22543d;
-    }
-    
-    .status-unmatched {
-        background: #fed7d7;
-        color: #742a2a;
-    }
+
 </style>
 """, unsafe_allow_html=True)
 
