@@ -9,7 +9,6 @@ from automation import SMSTallyAutomation
 # Page configuration
 st.set_page_config(
     page_title="SMS & Tally Reconciliation",
-    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -54,7 +53,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown('<h1 class="main-header">📊 SMS & Tally Reconciliation Tool</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">SMS & Tally Reconciliation Tool</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Automatically match SMS and Tally data with GST verification</p>', unsafe_allow_html=True)
 st.markdown("---")
 
@@ -88,7 +87,7 @@ with st.sidebar:
     
     st.markdown("---")
     st.info("""
-    ### 📋 Instructions:
+    ### Instructions:
     1. Upload SMS Excel file
     2. Upload Tally Excel file  
     3. Upload GST files (optional)
@@ -100,7 +99,7 @@ with st.sidebar:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("📱 Upload SMS File")
+    st.subheader("Upload SMS File")
     st.markdown("**Required columns:** TransactionDate, TransactionMode, Description, Remarks, Debit, Credit")
     sms_file = st.file_uploader(
         "Choose SMS Excel file", 
@@ -109,7 +108,7 @@ with col1:
     )
 
 with col2:
-    st.subheader("📋 Upload Tally File")
+    st.subheader("Upload Tally File")
     st.markdown("**Required columns:** Date, Particulars, Vch Type, Vch No., Debit, Credit")
     tally_file = st.file_uploader(
         "Choose Tally Excel file", 
@@ -117,7 +116,7 @@ with col2:
         key="tally_uploader"
     )
 
-st.subheader("🏢 Upload GST Files (Optional)")
+st.subheader("Upload GST Files (Optional)")
 st.markdown("**Supported formats:** GST 2A/2B files with invoice values")
 gst_files = st.file_uploader(
     "Choose GST Excel files", 
@@ -127,7 +126,7 @@ gst_files = st.file_uploader(
 )
 
 # Process button
-if st.button("🚀 Start Processing", type="primary", width='stretch'):
+if st.button("Start Processing", type="primary", width='stretch'):
     if sms_file and tally_file:
         with st.spinner("Processing files... This may take a few minutes."):
             try:
@@ -157,10 +156,10 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                 stats = automation.get_summary_stats(sms_df, tally_df)
                 
                 # Display success message
-                st.success("✅ Processing completed successfully!")
+                st.success("Processing completed successfully!")
                 
                 # Display summary in columns
-                st.markdown("### 📈 Summary Statistics")
+                st.markdown("### Summary Statistics")
                 col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
@@ -184,7 +183,7 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     st.warning("⚠️ Warning: The sum of matched SMS and Tally records does not match!")
                 
                 # Create tabs for results
-                tab1, tab2 = st.tabs(["📱 SMS Results", "📋 Tally Results"])
+                tab1, tab2 = st.tabs(["SMS Results", "Tally Results"])
                 
                 with tab1:
                     st.subheader("SMS Data Results")
@@ -195,9 +194,9 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.info(f"✅ Matched: {matched_count} records")
+                        st.info(f"Matched: {matched_count} records")
                     with col2:
-                        st.warning(f"❌ Unmatched: {unmatched_count} records")
+                        st.warning(f"Unmatched: {unmatched_count} records")
                     
                     # Display cleaned SMS data (fix mixed-type issues)
                     sms_display = sms_df.copy()
@@ -214,7 +213,7 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     # Download button for SMS results
                     csv = sms_df.to_csv(index=False)
                     st.download_button(
-                        label="📥 Download SMS Results (CSV)",
+                        label="Download SMS Results (CSV)",
                         data=csv,
                         file_name=f"sms_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv",
@@ -230,9 +229,9 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.info(f"✅ Matched: {matched_count} records")
+                        st.info(f"Matched: {matched_count} records")
                     with col2:
-                        st.warning(f"❌ Unmatched: {unmatched_count} records")
+                        st.warning(f"Unmatched: {unmatched_count} records")
                     
                     # Display cleaned Tally data (fix mixed-type issues)
                     tally_display = tally_df.copy()
@@ -249,7 +248,7 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     # Download button for Tally results
                     csv = tally_df.to_csv(index=False)
                     st.download_button(
-                        label="📥 Download Tally Results (CSV)",
+                        label="Download Tally Results (CSV)",
                         data=csv,
                         file_name=f"tally_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv",
@@ -258,7 +257,7 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                 
                 # Display GST status summary if checked
                 if check_gst:
-                    st.markdown("### 🏢 GST Verification Summary")
+                    st.markdown("### GST Verification Summary")
                     
                     # Count GST status for SMS
                     if 'GST Status' in sms_df.columns:
@@ -283,7 +282,7 @@ st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 20px;">
     <p>Step into the future - Embrace learning over manual tasks.</p>
-    <p><strong>Proudly initiated by our CEO, Ms. Vandana</strong></p>
-    <p>For support: harpinder.singh@rvsolutions.in</p>
+    <p><strong>Embrace Automation - Harpinder Singh</strong></p>
+    <p>For Support: harpinder.singh@rvsolutions.in</p>
 </div>
 """, unsafe_allow_html=True)
