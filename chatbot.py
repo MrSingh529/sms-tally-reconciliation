@@ -114,12 +114,12 @@ class Chatbot:
         self.download_files = {
             "download_tally": {
                 "filename": "Tally_Template.xlsx",
-                "url": "https://github.com/your-repo/reconciliation-suite/raw/main/templates/Tally_Template.xlsx",
+                "url": "https://github.com/MrSingh529/sms-tally-reconciliation/raw/refs/heads/main/templates/Tally_Template.xlsx",
                 "local_path": "templates/Tally_Template.xlsx"
             },
             "download_sms": {
                 "filename": "SMS_Template.xlsx",
-                "url": "https://github.com/your-repo/reconciliation-suite/raw/main/templates/SMS_Template.xlsx",
+                "url": "https://github.com/MrSingh529/sms-tally-reconciliation/raw/refs/heads/main/templates/SMS_Template.xlsx",
                 "local_path": "templates/SMS_Template.xlsx"
             },
             "download_gst_format1": {
