@@ -263,13 +263,9 @@ class Chatbot:
         return None
     
     def render_chat_button(self):
-        """Render the floating chat button"""
-        # Use session state to track button click
-        if "chat_button_clicked" not in st.session_state:
-            st.session_state["chat_button_clicked"] = False
-        
-        # Create a container with custom styling
-        st.markdown("""
+        """Render the floating chat button - FIXED VERSION"""
+        # Always render the button, but control visibility with CSS
+        button_html = """
         <style>
         .floating-chat-button-container {
             position: fixed;
@@ -277,7 +273,6 @@ class Chatbot:
             right: 20px;
             z-index: 9999;
         }
-        
         .floating-chat-button-container button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -293,33 +288,25 @@ class Chatbot:
             align-items: center;
             justify-content: center;
         }
-        
         .floating-chat-button-container button:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
         </style>
-        """, unsafe_allow_html=True)
         
-        # Create columns to position the button
-        col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+        <div class="floating-chat-button-container">
+        """
         
-        with col7:
-            st.markdown('<div class="floating-chat-button-container">', unsafe_allow_html=True)
-            
-            # Simplified button without complex onClick handlers
-            button_label = "❌" if st.session_state[self.chat_open_key] else "🤖"
-            button_help = "Close Chat" if st.session_state[self.chat_open_key] else "Chat with Assistant"
-            
-            if st.button(
-                button_label,
-                key="floating_chat_button",
-                help=button_help,
-                use_container_width=True
-            ):
-                st.session_state[self.chat_open_key] = not st.session_state[self.chat_open_key]
-                if st.session_state[self.chat_open_key] and not st.session_state[self.chat_initialized_key]:
-                    self.initialize_chat()
-                st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(button_html, unsafe_allow_html=True)
+        
+        # Use Streamlit's native button with proper key
+        if st.button("🤖", 
+                    key="floating_chat_button", 
+                    help="Chat with Assistant",
+                    type="secondary"):
+            st.session_state[self.chat_open_key] = not st.session_state[self.chat_open_key]
+            if st.session_state[self.chat_open_key] and not st.session_state[self.chat_initialized_key]:
+                self.initialize_chat()
+            st.rerun()
+        
+        st.markdown("</div>", unsafe_allow_html=True)

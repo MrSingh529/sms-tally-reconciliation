@@ -450,6 +450,32 @@ st.markdown("""
         border-color: #cbd5e0;
         transform: translateY(-1px);
     }
+    
+    /* Floating button */
+    .floating-chat-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .floating-chat-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -837,10 +863,10 @@ chatbot.render_chat_button()
 
 # Handle chat open/close
 if st.session_state.get("chat_open", False):
-    # Use columns to create a fixed-position chat window
+    # Chat window CSS
     st.markdown("""
     <style>
-    .chat-window {
+    .chat-window-fixed {
         position: fixed;
         bottom: 100px;
         right: 20px;
@@ -851,40 +877,27 @@ if st.session_state.get("chat_open", False):
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         z-index: 10000;
         border: 1px solid #e8ecef;
-        overflow: hidden;
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # Create a container for the chat
+    # Use a single container approach
     with st.container():
-        st.markdown('<div class="chat-window">', unsafe_allow_html=True)
-        
-        # Chat header with close button
-        header_col1, header_col2, header_col3 = st.columns([4, 2, 1])
-        with header_col1:
-            st.markdown("""
-            <div style='padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                     color: white; font-weight: 600;'>
-                🤖 Reconciliation Assistant
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with header_col3:
-            if st.button("×", key="close_chat_top", help="Close chat"):
-                st.session_state["chat_open"] = False
-                st.rerun()
-        
-        # Render the chat interface
-        chatbot.render_chat_interface()
-        
-        # Close button at bottom
-        if st.button("Close Chat", key="close_chat_bottom", use_container_width=True, type="secondary"):
-            st.session_state["chat_open"] = False
-            st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        col1, col2 = st.columns([1, 400])  # Spacer + chat window width
+        with col2:
+            # Chat header
+            header_col = st.columns([4, 1])
+            with header_col[0]:
+                st.markdown("### 🤖 Reconciliation Assistant")
+            with header_col[1]:
+                if st.button("✕", key="close_chat"):
+                    st.session_state["chat_open"] = False
+                    st.rerun()
+            
+            st.divider()
+            
+            # Render chat interface
+            chatbot.render_chat_interface()
 
 # ---------------------- CHATBOT DOWNLOAD HANDLER -----------------------
 if "trigger_download" in st.session_state:
