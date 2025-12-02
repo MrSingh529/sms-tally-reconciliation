@@ -84,52 +84,46 @@ st.markdown("""
         border-bottom: 2px solid #f7fafc;
     }
     
-    /* Metric cards */
+    /* Metric cards - minimal style */
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        color: white;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        background: transparent;
+        border-radius: 0;
+        padding: 1.5rem 0;
+        color: #1a202c;
         text-align: center;
         transition: all 0.3s ease;
     }
     
     .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        transform: translateY(-2px);
     }
     
     .metric-value {
-        font-size: 2rem;
+        font-size: 2.5rem;
         font-weight: 700;
         margin: 0.5rem 0;
+        color: #1a202c;
     }
     
     .metric-label {
-        font-size: 0.9rem;
-        opacity: 0.9;
-        font-weight: 500;
+        font-size: 0.85rem;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
+        color: #718096;
     }
     
-    /* Success metric variant */
-    .metric-card.success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+    /* Metric variants with text colors only */
+    .metric-card.success .metric-value {
+        color: #059669;
     }
     
-    /* Warning metric variant */
-    .metric-card.warning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+    .metric-card.warning .metric-value {
+        color: #dc2626;
     }
     
-    /* Info metric variant */
-    .metric-card.info {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+    .metric-card.info .metric-value {
+        color: #2563eb;
     }
     
     /* Upload zone styling */
