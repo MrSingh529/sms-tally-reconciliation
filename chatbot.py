@@ -124,12 +124,12 @@ class Chatbot:
             },
             "download_gst_format1": {
                 "filename": "GST_Template_Format1.xlsx",
-                "url": "https://github.com/your-repo/reconciliation-suite/raw/main/templates/GST_Format1.xlsx",
+                "url": "https://github.com/MrSingh529/sms-tally-reconciliation/raw/refs/heads/main/templates/GST_Format1.xls",
                 "local_path": "templates/GST_Format1.xlsx"
             },
             "download_gst_format2": {
                 "filename": "GST_Template_Format2.xlsx",
-                "url": "https://github.com/your-repo/reconciliation-suite/raw/main/templates/GST_Format2.xlsx",
+                "url": "https://github.com/MrSingh529/sms-tally-reconciliation/raw/refs/heads/main/templates/GST_Format2.xlsx",
                 "local_path": "templates/GST_Format2.xlsx"
             }
         }
