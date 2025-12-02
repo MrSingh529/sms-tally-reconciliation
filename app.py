@@ -127,7 +127,7 @@ gst_files = st.file_uploader(
 )
 
 # Process button
-if st.button("🚀 Start Processing", type="primary", use_container_width=True):
+if st.button("🚀 Start Processing", type="primary", width='stretch'):
     if sms_file and tally_file:
         with st.spinner("Processing files... This may take a few minutes."):
             try:
@@ -199,10 +199,15 @@ if st.button("🚀 Start Processing", type="primary", use_container_width=True):
                     with col2:
                         st.warning(f"❌ Unmatched: {unmatched_count} records")
                     
-                    # Display data with filtering
+                    # Display cleaned SMS data (fix mixed-type issues)
+                    sms_display = sms_df.copy()
+                    for col in sms_display.columns:
+                        if sms_display[col].dtype == 'object':
+                            sms_display[col] = sms_display[col].astype(str)
+
                     st.dataframe(
-                        sms_df,
-                        use_container_width=True,
+                        sms_display,
+                        width='stretch',
                         height=400
                     )
                     
@@ -229,10 +234,15 @@ if st.button("🚀 Start Processing", type="primary", use_container_width=True):
                     with col2:
                         st.warning(f"❌ Unmatched: {unmatched_count} records")
                     
-                    # Display data with filtering
+                    # Display cleaned Tally data (fix mixed-type issues)
+                    tally_display = tally_df.copy()
+                    for col in tally_display.columns:
+                        if tally_display[col].dtype == 'object':
+                            tally_display[col] = tally_display[col].astype(str)
+
                     st.dataframe(
-                        tally_df,
-                        use_container_width=True,
+                        tally_display,
+                        width='stretch',
                         height=400
                     )
                     

@@ -64,10 +64,24 @@ class SMSTallyAutomation:
             df.columns = df.iloc[header_row].fillna('')  # Replace NaNs in header row with empty strings        
             df = df.iloc[header_row + 1:].reset_index(drop=True)
         else:
-            raise KeyError("Date header not found in the Tally data")
+            # If no date header found, assume first row is header
+            pass
 
         df.columns = df.columns.str.strip()
 
+        # Handle unexpected columns
+        column_renames = {
+            'TallyNote': 'Notes',
+            'Voucher Type': 'Vch Type',
+            'Voucher No': 'Vch No.',
+            'Voucher No.': 'Vch No.',
+            'Vch No': 'Vch No.',
+        }
+        
+        for old_col, new_col in column_renames.items():
+            if old_col in df.columns and new_col not in df.columns:
+                df = df.rename(columns={old_col: new_col})
+    
         required_columns = ['Date', 'Particulars', 'Vch Type', 'Vch No.', 'Debit', 'Credit']
         for col in required_columns:
             if col not in df.columns:
@@ -89,7 +103,7 @@ class SMSTallyAutomation:
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
         df['Vch No.'] = df['Vch No.'].astype(str).str.upper()
         df['Transaction Type'] = df['Transaction Type'].astype(str).str.upper()
-    
+
         return df
     
     def match_sms_tally_data(self, sms_df, tally_df):
@@ -248,9 +262,17 @@ class SMSTallyAutomation:
             # Convert amount to numeric
             gst_df[amount_col] = pd.to_numeric(gst_df[amount_col], errors='coerce')
             
-            # Extract year from date column if available
+            # Extract year from date column if available - handle multiple date formats
             if date_col and date_col in gst_df.columns:
-                gst_df['Year'] = pd.to_datetime(gst_df[date_col], errors='coerce').dt.year
+                try:
+                    # Try with dayfirst=True for dd/mm/yyyy format
+                    gst_df['Year'] = pd.to_datetime(gst_df[date_col], errors='coerce', dayfirst=True).dt.year
+                except:
+                    # If that fails, try without dayfirst
+                    try:
+                        gst_df['Year'] = pd.to_datetime(gst_df[date_col], errors='coerce').dt.year
+                    except:
+                        gst_df['Year'] = None
             else:
                 # Try to extract year from filename
                 if hasattr(file, 'name'):
