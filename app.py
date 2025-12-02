@@ -334,25 +334,29 @@ with st.sidebar:
     st.markdown("---")
     
     with st.expander("🎯 Matching Parameters", expanded=True):
+        st.markdown("**📅 Date Tolerance (days)**")
         tolerance_days = st.number_input(
-            "Date Tolerance (days)", 
+            "Date Tolerance", 
             min_value=0, 
             max_value=365, 
             value=30,
-            help="Maximum days difference for date matching"
+            help="Maximum days difference for date matching",
+            label_visibility="collapsed"
         )
         
+        st.markdown("**💰 Amount Tolerance (₹)**")
         tolerance_amount = st.number_input(
-            "Amount Tolerance (₹)", 
+            "Amount Tolerance", 
             min_value=0.0, 
             value=0.0,
             step=0.1,
-            help="Maximum amount difference for matching"
+            help="Maximum amount difference for matching",
+            label_visibility="collapsed"
         )
     
     with st.expander("🔍 GST Verification", expanded=True):
         check_gst = st.checkbox(
-            "Enable GST verification", 
+            "✅ Enable GST verification", 
             value=True,
             help="Verify service claims against GST files"
         )
@@ -361,15 +365,15 @@ with st.sidebar:
     st.markdown("""
     <div class="custom-alert alert-info">
         <strong>📋 Quick Guide</strong><br>
-        1️⃣ Upload SMS file<br>
-        2️⃣ Upload Tally file<br>
-        3️⃣ Add GST files (optional)<br>
-        4️⃣ Process & download results
+        <span style="font-size: 1.1rem;">1️⃣</span> Upload SMS file<br>
+        <span style="font-size: 1.1rem;">2️⃣</span> Upload Tally file<br>
+        <span style="font-size: 1.1rem;">3️⃣</span> Add GST files (optional)<br>
+        <span style="font-size: 1.1rem;">4️⃣</span> Process & download results
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    st.markdown("**Need help?**")
+    st.markdown("**💬 Need help?**")
     st.markdown("📧 harpinder.singh@rvsolutions.in")
 
 # File Upload Section
@@ -393,7 +397,7 @@ with col1:
         label_visibility="collapsed"
     )
     if sms_file:
-        st.success(f"✓ {sms_file.name}")
+        st.success(f"✅ {sms_file.name}")
 
 with col2:
     st.markdown("""
@@ -411,7 +415,7 @@ with col2:
         label_visibility="collapsed"
     )
     if tally_file:
-        st.success(f"✓ {tally_file.name}")
+        st.success(f"✅ {tally_file.name}")
 
 with col3:
     st.markdown("""
@@ -430,7 +434,7 @@ with col3:
         label_visibility="collapsed"
     )
     if gst_files:
-        st.success(f"✓ {len(gst_files)} file(s)")
+        st.success(f"✅ {len(gst_files)} file(s) uploaded")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
