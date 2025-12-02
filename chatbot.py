@@ -6,19 +6,18 @@ from datetime import datetime
 
 class Chatbot:
     def __init__(self):
-        self.chat_history_key = "chat_history"
-        self.chat_open_key = "chat_open"
-        self.chat_initialized_key = "chat_initialized"
-        
         # Initialize session state
-        if self.chat_history_key not in st.session_state:
-            st.session_state[self.chat_history_key] = []
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
         
-        if self.chat_open_key not in st.session_state:
-            st.session_state[self.chat_open_key] = False
+        if "chat_open" not in st.session_state:
+            st.session_state.chat_open = False
         
-        if self.chat_initialized_key not in st.session_state:
-            st.session_state[self.chat_initialized_key] = False
+        if "chat_initialized" not in st.session_state:
+            st.session_state.chat_initialized = False
+        
+        if "current_flow" not in st.session_state:
+            st.session_state.current_flow = "main_menu"
         
         # Define the conversation flow
         self.flows = {
@@ -133,22 +132,21 @@ class Chatbot:
             }
         }
     
-    def add_message(self, sender: str, message: str, is_option: bool = False):
+    def add_message(self, sender: str, message: str):
         """Add a message to chat history"""
-        st.session_state[self.chat_history_key].append({
+        st.session_state.chat_history.append({
             "sender": sender,
             "message": message,
-            "time": datetime.now().strftime("%H:%M"),
-            "is_option": is_option
+            "time": datetime.now().strftime("%H:%M")
         })
     
     def initialize_chat(self):
         """Initialize chat with greeting if not already done"""
-        if not st.session_state[self.chat_initialized_key]:
+        if not st.session_state.chat_initialized:
             self.add_message("bot", self.flows["main_menu"]["message"])
-            st.session_state[self.chat_initialized_key] = True
+            st.session_state.chat_initialized = True
     
-    def handle_option_click(self, option_action: str):
+    def handle_option(self, option_action: str):
         """Handle option selection"""
         if option_action.startswith("download_"):
             # Handle downloads
@@ -156,9 +154,13 @@ class Chatbot:
                 file_info = self.download_files[option_action]
                 self.add_message("user", f"Selected: {option_action.replace('_', ' ').title()}")
                 self.add_message("bot", self.flows["download_success"]["message"])
+                st.session_state.current_flow = "download_success"
                 
                 # Trigger download
-                self.trigger_download(file_info)
+                st.session_state["trigger_download"] = {
+                    "filename": file_info["filename"],
+                    "local_path": file_info.get("local_path")
+                }
             else:
                 self.add_message("bot", "Download option not available yet.")
                 self.show_main_menu()
@@ -167,43 +169,37 @@ class Chatbot:
             self.show_main_menu()
         
         elif option_action == "close_chat":
-            st.session_state[self.chat_open_key] = False
+            st.session_state.chat_open = False
         
         elif option_action in self.flows:
             # Show submenu
-            flow = self.flows[option_action]
-            self.add_message("bot", flow["message"])
+            self.add_message("user", f"Selected: {option_action.replace('_', ' ').title()}")
+            self.add_message("bot", self.flows[option_action]["message"])
+            st.session_state.current_flow = option_action
     
     def show_main_menu(self):
         """Show main menu options"""
         self.add_message("bot", self.flows["main_menu"]["message"])
-    
-    def trigger_download(self, file_info: Dict):
-        """Trigger file download"""
-        st.session_state["trigger_download"] = {
-            "filename": file_info["filename"],
-            "url": file_info["url"],
-            "local_path": file_info.get("local_path")
-        }
+        st.session_state.current_flow = "main_menu"
     
     def render_chat_interface(self):
         """Render the chat interface"""
-        # Create a container for the chat interface
+        # Create a container for the chat
         with st.container():
             # Chat header
             st.markdown("""
-            <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                     border-radius: 10px 10px 0 0; color: white; font-weight: 600; margin-bottom: 15px;">
+            <div style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                     color: white; font-weight: 600; border-radius: 10px 10px 0 0; margin-bottom: 10px;">
                 🤖 Reconciliation Assistant
             </div>
             """, unsafe_allow_html=True)
             
-            # Chat messages area with scroll
-            chat_messages = st.container(height=350)
+            # Chat messages area
+            chat_container = st.container(height=350)
             
-            with chat_messages:
+            with chat_container:
                 # Display chat history
-                for i, msg in enumerate(st.session_state[self.chat_history_key]):
+                for msg in st.session_state.chat_history:
                     if msg["sender"] == "bot":
                         st.markdown(f"""
                         <div style="background: #f0f2f6; padding: 12px; border-radius: 15px; 
@@ -228,66 +224,49 @@ class Chatbot:
                         </div>
                         """, unsafe_allow_html=True)
             
-            # Show options based on last message
-            if st.session_state[self.chat_history_key]:
-                last_msg = st.session_state[self.chat_history_key][-1]
+            # Show options for current flow
+            current_flow = st.session_state.current_flow
+            if current_flow in self.flows:
+                options = self.flows[current_flow]["options"]
                 
-                if last_msg["sender"] == "bot":
-                    # Find which flow we're in
-                    current_flow = None
-                    for flow_name, flow in self.flows.items():
-                        if flow["message"] == last_msg["message"]:
-                            current_flow = flow
-                            break
-                    
-                    if current_flow:
-                        # Create options
-                        for option in current_flow["options"]:
-                            col1, col2, col3 = st.columns([1, 3, 1])
-                            with col2:
-                                if st.button(
-                                    option["text"],
-                                    key=f"option_{option['action']}_{len(st.session_state[self.chat_history_key])}",
-                                    use_container_width=True,
-                                    type="secondary"
-                                ):
-                                    self.handle_option_click(option["action"])
-                                    st.rerun()
-    
-    def find_action_for_option(self, option_text: str) -> Optional[str]:
-        """Find the action for a given option text"""
-        for flow_name, flow in self.flows.items():
-            for option in flow.get("options", []):
-                if option["text"] == option_text:
-                    return option["action"]
-        return None
+                # Create options as Streamlit buttons
+                for option in options:
+                    if st.button(
+                        option["text"],
+                        key=f"chat_option_{option['action']}",
+                        use_container_width=True,
+                        type="secondary"
+                    ):
+                        self.handle_option(option["action"])
+                        st.rerun()
     
     def render_chat_button(self):
-        """Render the floating chat button - SIMPLIFIED VERSION"""
-        # Use columns to position the button
-        col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+        """Render the floating chat button"""
+        # Use HTML/CSS for fixed positioning
+        st.markdown("""
+        <style>
+        .floating-chat-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
-        with col7:
-            # Create a container with fixed position styling
-            st.markdown("""
-            <style>
-            .floating-chat-container {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                z-index: 1000;
-            }
-            </style>
-            <div class="floating-chat-container">
-            """, unsafe_allow_html=True)
+        # Create a container for the button
+        with st.container():
+            st.markdown('<div class="floating-chat-btn">', unsafe_allow_html=True)
             
-            # Use a proper Streamlit button with emoji
-            if st.button("🤖", key="floating_chat_button", 
-                        help="Chat with Assistant",
-                        use_container_width=False):
-                st.session_state[self.chat_open_key] = not st.session_state[self.chat_open_key]
-                if st.session_state[self.chat_open_key] and not st.session_state[self.chat_initialized_key]:
+            # Create the actual Streamlit button
+            if st.button(
+                "🤖",
+                key="chat_toggle_button",
+                help="Chat with Assistant"
+            ):
+                st.session_state.chat_open = not st.session_state.chat_open
+                if st.session_state.chat_open and not st.session_state.chat_initialized:
                     self.initialize_chat()
                 st.rerun()
             
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)

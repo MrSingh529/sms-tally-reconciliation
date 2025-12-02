@@ -443,6 +443,7 @@ st.markdown("""
         padding: 0.5rem 1rem;
         font-weight: 500;
         transition: all 0.2s ease;
+        margin: 2px 0;
     }
     
     .stButton > button[kind="secondary"]:hover {
@@ -451,28 +452,20 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Floating button */
-    .floating-chat-button {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 9999;
+    /* Floating button styling */
+    .floating-chat-btn .stButton > button {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
         font-size: 24px;
-        cursor: pointer;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
     
-    .floating-chat-button:hover {
+    .floating-chat-btn .stButton > button:hover {
         transform: scale(1.1);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
@@ -861,12 +854,12 @@ if process_button:
 
 chatbot.render_chat_button()
 
-# Handle chat open/close
+# Handle chat window
 if st.session_state.get("chat_open", False):
-    # Use columns to create a fixed-position chat window
+    # Create a container with fixed positioning
     st.markdown("""
     <style>
-    .chat-window {
+    .chat-window-container {
         position: fixed;
         bottom: 100px;
         right: 20px;
@@ -875,39 +868,26 @@ if st.session_state.get("chat_open", False):
         background: white;
         border-radius: 15px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        z-index: 10000;
+        z-index: 9999;
         border: 1px solid #e8ecef;
         overflow: hidden;
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # Create a container for the chat
+    # Main chat container
     with st.container():
-        st.markdown('<div class="chat-window">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-window-container">', unsafe_allow_html=True)
         
-        # Chat header with close button
-        header_col1, header_col2, header_col3 = st.columns([4, 2, 1])
-        with header_col1:
-            st.markdown("""
-            <div style='padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                     color: white; font-weight: 600;'>
-                🤖 Reconciliation Assistant
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with header_col3:
-            if st.button("×", key="close_chat_top", help="Close chat"):
-                st.session_state["chat_open"] = False
+        # Close button at top-right
+        col1, col2, col3 = st.columns([5, 1, 1])
+        with col3:
+            if st.button("×", key="close_chat_btn"):
+                st.session_state.chat_open = False
                 st.rerun()
         
-        # Render the chat interface
+        # Render chat interface
         chatbot.render_chat_interface()
-        
-        # Close button at bottom
-        if st.button("Close Chat", key="close_chat_bottom", use_container_width=True, type="secondary"):
-            st.session_state["chat_open"] = False
-            st.rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
 
