@@ -1,4 +1,4 @@
-# chatbot.py (fixed)
+# chatbot.py
 import streamlit as st
 import os
 from typing import Dict, List, Optional
@@ -9,18 +9,18 @@ class Chatbot:
         self.chat_history_key = "chat_history"
         self.chat_open_key = "chat_open"
         self.chat_initialized_key = "chat_initialized"
-
+        
         # Initialize session state
         if self.chat_history_key not in st.session_state:
             st.session_state[self.chat_history_key] = []
-
+        
         if self.chat_open_key not in st.session_state:
             st.session_state[self.chat_open_key] = False
-
+        
         if self.chat_initialized_key not in st.session_state:
             st.session_state[self.chat_initialized_key] = False
-
-        # Conversation flows (unchanged)
+        
+        # Define the conversation flow
         self.flows = {
             "main_menu": {
                 "message": "Hello RVian! What do you want to do today?",
@@ -108,8 +108,8 @@ class Chatbot:
                 ]
             }
         }
-
-        # Define file downloads (same as yours)
+        
+        # Define file downloads
         self.download_files = {
             "download_tally": {
                 "filename": "Tally_Template.xlsx",
@@ -132,10 +132,7 @@ class Chatbot:
                 "local_path": "templates/GST_Format2.xlsx"
             }
         }
-
-    # ---------------------------
-    # Core chat helpers (unchanged)
-    # ---------------------------
+    
     def add_message(self, sender: str, message: str, is_option: bool = False):
         """Add a message to chat history"""
         st.session_state[self.chat_history_key].append({
@@ -144,13 +141,13 @@ class Chatbot:
             "time": datetime.now().strftime("%H:%M"),
             "is_option": is_option
         })
-
+    
     def initialize_chat(self):
         """Initialize chat with greeting if not already done"""
         if not st.session_state[self.chat_initialized_key]:
             self.add_message("bot", self.flows["main_menu"]["message"])
             st.session_state[self.chat_initialized_key] = True
-
+    
     def handle_option_click(self, option_action: str):
         """Handle option selection"""
         if option_action.startswith("download_"):
@@ -159,28 +156,28 @@ class Chatbot:
                 file_info = self.download_files[option_action]
                 self.add_message("user", f"Selected: {option_action.replace('_', ' ').title()}")
                 self.add_message("bot", self.flows["download_success"]["message"])
-
+                
                 # Trigger download
                 self.trigger_download(file_info)
             else:
                 self.add_message("bot", "Download option not available yet.")
                 self.show_main_menu()
-
+        
         elif option_action == "main_menu":
             self.show_main_menu()
-
+        
         elif option_action == "close_chat":
             st.session_state[self.chat_open_key] = False
-
+        
         elif option_action in self.flows:
             # Show submenu
             flow = self.flows[option_action]
             self.add_message("bot", flow["message"])
-
+    
     def show_main_menu(self):
         """Show main menu options"""
         self.add_message("bot", self.flows["main_menu"]["message"])
-
+    
     def trigger_download(self, file_info: Dict):
         """Trigger file download"""
         st.session_state["trigger_download"] = {
@@ -188,79 +185,75 @@ class Chatbot:
             "url": file_info["url"],
             "local_path": file_info.get("local_path")
         }
-
-    # ---------------------------
-    # Rendering (safe, Streamlit-only)
-    # ---------------------------
+    
     def render_chat_interface(self):
-        """Render the chat interface using Streamlit widgets only"""
-        # Header block
-        st.markdown("""
-        <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                 border-radius: 10px 10px 0 0; color: white; font-weight: 600; margin-bottom: 10px;">
-            🤖 Reconciliation Assistant
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Messages area (scroll will be provided by Streamlit container)
-        container = st.container()
-        with container:
-            for i, msg in enumerate(st.session_state[self.chat_history_key]):
-                if msg["sender"] == "bot":
-                    st.markdown(f"""
-                    <div style="background: #f0f2f6; padding: 12px; border-radius: 12px; margin-bottom: 8px; max-width: 85%;">
-                        <div style="font-weight: 600; color: #667eea; font-size: 0.9em;">Assistant</div>
-                        <div style="margin-top: 6px;">{msg['message']}</div>
-                        <div style="text-align: right; font-size: 0.8em; color: #718096; margin-top: 6px;">
-                            {msg['time']}
+        """Render the chat interface"""
+        # Create a container for the chat interface
+        with st.container():
+            # Chat header
+            st.markdown("""
+            <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                     border-radius: 10px 10px 0 0; color: white; font-weight: 600; margin-bottom: 15px;">
+                🤖 Reconciliation Assistant
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Chat messages area with scroll
+            chat_messages = st.container(height=350)
+            
+            with chat_messages:
+                # Display chat history
+                for i, msg in enumerate(st.session_state[self.chat_history_key]):
+                    if msg["sender"] == "bot":
+                        st.markdown(f"""
+                        <div style="background: #f0f2f6; padding: 12px; border-radius: 15px; 
+                                 margin-bottom: 10px; max-width: 85%;">
+                            <div style="font-weight: 600; color: #667eea; font-size: 0.9em;">Assistant</div>
+                            <div style="margin-top: 5px;">{msg['message']}</div>
+                            <div style="text-align: right; font-size: 0.8em; color: #718096; margin-top: 5px;">
+                                {msg['time']}
+                            </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div style="background: #667eea; color: white; padding: 12px; border-radius: 12px; margin-bottom: 8px; max-width: 85%; margin-left: auto;">
-                        <div style="font-weight: 600; font-size: 0.9em;">You</div>
-                        <div style="margin-top: 6px;">{msg['message']}</div>
-                        <div style="text-align: right; font-size: 0.8em; opacity: 0.8; margin-top: 6px;">
-                            {msg['time']}
+                        """, unsafe_allow_html=True)
+                    
+                    elif msg["sender"] == "user":
+                        st.markdown(f"""
+                        <div style="background: #667eea; color: white; padding: 12px; border-radius: 15px; 
+                                 margin-bottom: 10px; max-width: 85%; margin-left: auto;">
+                            <div style="font-weight: 600; font-size: 0.9em;">You</div>
+                            <div style="margin-top: 5px;">{msg['message']}</div>
+                            <div style="text-align: right; font-size: 0.8em; opacity: 0.8; margin-top: 5px;">
+                                {msg['time']}
+                            </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-        # Show options for last bot message
-        if st.session_state[self.chat_history_key]:
-            last_msg = st.session_state[self.chat_history_key][-1]
-            if last_msg["sender"] == "bot":
-                # find flow by exact message (safe)
-                current_flow = None
-                for flow_name, flow in self.flows.items():
-                    if flow["message"] == last_msg["message"]:
-                        current_flow = flow
-                        break
-
-                if current_flow:
-                    # Render option buttons (Streamlit buttons)
-                    for option in current_flow.get("options", []):
-                        # Use a callback wrapper to avoid passing strings
-                        def make_callback(action):
-                            return lambda: self._option_clicked(action)
-
-                        # Unique key per message and option to avoid collision
-                        key = f"opt_{len(st.session_state[self.chat_history_key])}_{option['action']}"
-                        if st.button(option["text"], key=key, use_container_width=True):
-                            # direct call - ensures callable, not string
-                            self._option_clicked(option["action"])
-                            st.experimental_rerun()
-
-    def _option_clicked(self, action: str):
-        """Internal handler used by button callbacks"""
-        # Add a small user echo for UI clarity
-        # (avoid adding huge strings)
-        if action in self.download_files:
-            # echo selected friendly text
-            self.add_message("user", f"{action.replace('_', ' ').title()}")
-        self.handle_option_click(action)
-
+                        """, unsafe_allow_html=True)
+            
+            # Show options based on last message
+            if st.session_state[self.chat_history_key]:
+                last_msg = st.session_state[self.chat_history_key][-1]
+                
+                if last_msg["sender"] == "bot":
+                    # Find which flow we're in
+                    current_flow = None
+                    for flow_name, flow in self.flows.items():
+                        if flow["message"] == last_msg["message"]:
+                            current_flow = flow
+                            break
+                    
+                    if current_flow:
+                        # Create options
+                        for option in current_flow["options"]:
+                            col1, col2, col3 = st.columns([1, 3, 1])
+                            with col2:
+                                if st.button(
+                                    option["text"],
+                                    key=f"option_{option['action']}_{len(st.session_state[self.chat_history_key])}",
+                                    use_container_width=True,
+                                    type="secondary"
+                                ):
+                                    self.handle_option_click(option["action"])
+                                    st.rerun()
+    
     def find_action_for_option(self, option_text: str) -> Optional[str]:
         """Find the action for a given option text"""
         for flow_name, flow in self.flows.items():
@@ -268,18 +261,33 @@ class Chatbot:
                 if option["text"] == option_text:
                     return option["action"]
         return None
-
+    
     def render_chat_button(self):
-        """Render a safe floating-like chat button using Streamlit UI (no inline JS/onclick)"""
-        # Place the button in the bottom-right using Streamlit layout columns
-        cols = st.columns([1,1,1,1,1,1,6])
-        # Put the button in the last narrow column to visually float it right
-        with cols[-1]:
-            # Use a simple Streamlit button - no HTML or JS
-            if st.button("🤖 Chat", key="floating_chat_button_native"):
-                # Toggle state using a callable, not a string
-                st.session_state[self.chat_open_key] = not st.session_state.get(self.chat_open_key, False)
+        """Render the floating chat button - SIMPLIFIED VERSION"""
+        # Use columns to position the button
+        col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+        
+        with col7:
+            # Create a container with fixed position styling
+            st.markdown("""
+            <style>
+            .floating-chat-container {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
+            </style>
+            <div class="floating-chat-container">
+            """, unsafe_allow_html=True)
+            
+            # Use a proper Streamlit button with emoji
+            if st.button("🤖", key="floating_chat_button", 
+                        help="Chat with Assistant",
+                        use_container_width=False):
+                st.session_state[self.chat_open_key] = not st.session_state[self.chat_open_key]
                 if st.session_state[self.chat_open_key] and not st.session_state[self.chat_initialized_key]:
                     self.initialize_chat()
-                # rerun to reflect UI changes immediately
-                st.experimental_rerun()
+                st.rerun()
+            
+            st.markdown("</div>", unsafe_allow_html=True)
