@@ -42,8 +42,21 @@ st.markdown("""
         -webkit-font-smoothing: antialiased;
     }
 
-    /* Global styling */
+    /* Global styling (apply Inter broadly) */
     html, body, .stApp {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+
+    /* Force Inter for headings / titles (overrides Streamlit or UA rules) */
+    .app-title,
+    .app-subtitle,
+    .card-header,
+    .metric-label,
+    .metric-value,
+    .upload-text,
+    .upload-subtext,
+    .footer-tagline,
+    .footer-credits {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
 
