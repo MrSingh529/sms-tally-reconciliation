@@ -185,7 +185,7 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                 
                 # Create tabs for results
                 tab1, tab2 = st.tabs(["📱 SMS Results", "📋 Tally Results"])
-                
+
                 with tab1:
                     st.subheader("SMS Data Results")
                     
@@ -199,28 +199,23 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     with col2:
                         st.warning(f"❌ Unmatched: {unmatched_count} records")
                     
-                    # Display cleaned SMS data (fix mixed-type issues)
+                    # Display data
                     sms_display = sms_df.copy()
+                    # Convert problematic columns to string for display
                     for col in sms_display.columns:
                         if sms_display[col].dtype == 'object':
                             sms_display[col] = sms_display[col].astype(str)
-
+                    
+                    # Show first 1000 rows for performance
                     st.dataframe(
-                        sms_display,
+                        sms_display.head(1000),
                         width='stretch',
                         height=400
                     )
                     
-                    # Download button for SMS results
-                    csv = sms_df.to_csv(index=False)
-                    st.download_button(
-                        label="📥 Download SMS Results (CSV)",
-                        data=csv,
-                        file_name=f"sms_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv",
-                        type="secondary"
-                    )
-                
+                    if len(sms_df) > 1000:
+                        st.info(f"Showing first 1000 of {len(sms_df)} rows. Download full results below.")
+
                 with tab2:
                     st.subheader("Tally Data Results")
                     
@@ -234,43 +229,128 @@ if st.button("🚀 Start Processing", type="primary", width='stretch'):
                     with col2:
                         st.warning(f"❌ Unmatched: {unmatched_count} records")
                     
-                    # Display cleaned Tally data (fix mixed-type issues)
+                    # Display data
                     tally_display = tally_df.copy()
+                    # Convert problematic columns to string for display
                     for col in tally_display.columns:
                         if tally_display[col].dtype == 'object':
                             tally_display[col] = tally_display[col].astype(str)
-
+                    
+                    # Show first 1000 rows for performance
                     st.dataframe(
-                        tally_display,
+                        tally_display.head(1000),
                         width='stretch',
                         height=400
                     )
                     
-                    # Download button for Tally results
-                    csv = tally_df.to_csv(index=False)
+                    if len(tally_df) > 1000:
+                        st.info(f"Showing first 1000 of {len(tally_df)} rows. Download full results below.")
+
+                # Consolidated Excel file with both sheets
+                st.markdown("### 📥 Download Consolidated Results")
+                st.info("Download a single Excel file with both SMS and Tally results in separate sheets.")
+
+                # Create Excel file with two sheets
+                from io import BytesIO
+                import openpyxl
+
+                # Create a BytesIO buffer for the Excel file
+                excel_buffer = BytesIO()
+
+                with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                    # Write SMS data to first sheet
+                    sms_df.to_excel(writer, sheet_name='SMS Reco Data', index=False)
+                    
+                    # Write Tally data to second sheet
+                    tally_df.to_excel(writer, sheet_name='Tally Reco Data', index=False)
+                    
+                    # Auto-adjust column widths for better readability
+                    for sheet_name in writer.sheets:
+                        worksheet = writer.sheets[sheet_name]
+                        for column in worksheet.columns:
+                            max_length = 0
+                            column_letter = openpyxl.utils.get_column_letter(column[0].column)
+                            for cell in column:
+                                try:
+                                    if len(str(cell.value)) > max_length:
+                                        max_length = len(str(cell.value))
+                                except:
+                                    pass
+                            adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters for readability
+                            worksheet.column_dimensions[column_letter].width = adjusted_width
+
+                # Get the Excel file data
+                excel_data = excel_buffer.getvalue()
+
+                # Download button for consolidated Excel
+                col1, col2 = st.columns([3, 1])
+                with col1:
                     st.download_button(
-                        label="📥 Download Tally Results (CSV)",
-                        data=csv,
-                        file_name=f"tally_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv",
-                        type="secondary"
+                        label="📥 Download Consolidated Excel File",
+                        data=excel_data,
+                        file_name=f"sms_tally_reconciliation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        mime="application/vnd.openpyxl-officedocument.spreadsheetml.sheet",
+                        type="primary",
+                        use_container_width=True,
+                        help="Contains both SMS and Tally results in separate sheets"
                     )
-                
+
+                with col2:
+                    st.write("")  # Spacer
+                    st.write("**File contains:**")
+                    st.write("• SMS Reco Data sheet")
+                    st.write("• Tally Reco Data sheet")
+
+                # Optional: Individual file downloads in expander
+                with st.expander("📁 Individual File Downloads (Optional)"):
+                    st.write("Download individual files in CSV format:")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        # SMS CSV download
+                        sms_csv = sms_df.to_csv(index=False)
+                        st.download_button(
+                            label="📱 SMS Results (CSV)",
+                            data=sms_csv,
+                            file_name=f"sms_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime="text/csv",
+                            type="secondary",
+                            use_container_width=True
+                        )
+                    
+                    with col2:
+                        # Tally CSV download
+                        tally_csv = tally_df.to_csv(index=False)
+                        st.download_button(
+                            label="📋 Tally Results (CSV)",
+                            data=tally_csv,
+                            file_name=f"tally_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime="text/csv",
+                            type="secondary",
+                            use_container_width=True
+                        )
+
                 # Display GST status summary if checked
                 if check_gst:
                     st.markdown("### 🏢 GST Verification Summary")
                     
-                    # Count GST status for SMS
-                    if 'GST Status' in sms_df.columns:
-                        sms_gst_counts = sms_df['GST Status'].value_counts()
-                        st.write("**SMS GST Status:**")
-                        st.write(sms_gst_counts)
+                    # Create columns for side-by-side display
+                    gst_col1, gst_col2 = st.columns(2)
                     
-                    # Count GST status for Tally
-                    if 'GST Status' in tally_df.columns:
-                        tally_gst_counts = tally_df['GST Status'].value_counts()
-                        st.write("**Tally GST Status:**")
-                        st.write(tally_gst_counts)
+                    with gst_col1:
+                        # Count GST status for SMS
+                        if 'GST Status' in sms_df.columns:
+                            st.write("**SMS GST Status:**")
+                            sms_gst_counts = sms_df['GST Status'].value_counts()
+                            st.dataframe(sms_gst_counts, width='stretch')
+                    
+                    with gst_col2:
+                        # Count GST status for Tally
+                        if 'GST Status' in tally_df.columns:
+                            st.write("**Tally GST Status:**")
+                            tally_gst_counts = tally_df['GST Status'].value_counts()
+                            st.dataframe(tally_gst_counts, width='stretch')
                 
             except Exception as e:
                 st.error(f"❌ Error processing files: {str(e)}")
