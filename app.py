@@ -29,6 +29,16 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
+    /* Fix sidebar toggle button */
+    [data-testid="collapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    [data-testid="collapsedControl"] svg {
+        display: block !important;
+    }
+    
     /* Main container */
     .main {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
