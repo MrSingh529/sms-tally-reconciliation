@@ -21,8 +21,8 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     /* Global styling */
-    * {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    html, body, .stApp, .main, .app-header, .custom-card, .app-footer {
+       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     
     /* Hide default Streamlit elements */
@@ -329,7 +329,7 @@ if 'results' not in st.session_state:
 st.markdown("""
 <div class="app-header">
     <h1 class="app-title">Reconciliation Suite</h1>
-    <p class="app-subtitle">Enterprise-grade SMS and Tally reconciliation with automated GST verification</p>
+    <p class="app-subtitle">SMS and Tally reconciliation with automated GST verification</p>
 </div>
 """, unsafe_allow_html=True)
 
