@@ -450,32 +450,6 @@ st.markdown("""
         border-color: #cbd5e0;
         transform: translateY(-1px);
     }
-    
-    /* Floating button */
-    .floating-chat-button {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 9999;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .floating-chat-button:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    }
 
 </style>
 """, unsafe_allow_html=True)
