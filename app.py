@@ -6,6 +6,41 @@ import base64
 from datetime import datetime
 from automation import SMSTallyAutomation
 
+# ---------------- NEW IMPORT ----------------
+from chatbot import Chatbot
+# --------------------------------------------
+
+# ---------------- CREATE TEMPLATE FILES ----------------
+def create_template_files():
+    """Create template files if they don't exist"""
+    templates_dir = "templates"
+    if not os.path.exists(templates_dir):
+        os.makedirs(templates_dir)
+
+    template_files = [
+        ("Tally_Template.xlsx", "Tally Transaction Template"),
+        ("SMS_Template.xlsx", "SMS Transaction Template"),
+        ("GST_Format1.xlsx", "GST Template Format 1"),
+        ("GST_Format2.xlsx", "GST Template Format 2")
+    ]
+
+    for filename, description in template_files:
+        filepath = os.path.join(templates_dir, filename)
+        if not os.path.exists(filepath):
+            import pandas as pd
+            if "Tally" in filename:
+                df = pd.DataFrame(columns=['Date', 'Particulars', 'Vch Type', 'Vch No.', 'Debit', 'Credit', 'Notes'])
+            elif "SMS" in filename:
+                df = pd.DataFrame(columns=['TransactionDate', 'TransactionMode', 'Description', 'Remarks', 'Debit', 'Credit', 'PaymentMode'])
+            elif "GST" in filename:
+                df = pd.DataFrame(columns=['Invoice No', 'Invoice Date', 'Invoice Value', 'GSTIN', 'Supplier Name'])
+
+            df.to_excel(filepath, index=False)
+
+    return templates_dir
+# --------------------------------------------------------
+
+
 # Page configuration
 st.set_page_config(
     page_title="Reconciliation Suite",
@@ -47,7 +82,7 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
 
-    /* Force Inter for headings / titles (overrides Streamlit or UA rules) */
+    /* Force Inter for headings / titles */
     .app-title,
     .app-subtitle,
     .card-header,
@@ -314,6 +349,97 @@ st.markdown("""
         font-size: 0.875rem;
         color: #718096;
     }
+            
+    .chat-container {
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        width: 400px;
+        height: 500px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid #e8ecef;
+    }
+    .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background: #f8f9fa;
+    }
+    .chat-message {
+        margin-bottom: 15px;
+        max-width: 80%;
+    }
+    .chat-message.bot { margin-right: auto; }
+    .chat-message.user { margin-left: auto; }
+    .message-bubble {
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    .bot .message-bubble {
+        background: white;
+        border: 1px solid #e8ecef;
+        color: #333;
+    }
+    .user .message-bubble {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .chat-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+    }
+    .chat-option-button {
+        background: white;
+        border: 1px solid #e8ecef;
+        border-radius: 8px;
+        padding: 10px 15px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+    .chat-option-button:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+        transform: translateY(-1px);
+    }
+    .close-chat {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    .close-chat:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    /* ----------------------------------------------------------- */
 
 </style>
 """, unsafe_allow_html=True)
@@ -323,6 +449,11 @@ if 'processing_complete' not in st.session_state:
     st.session_state.processing_complete = False
 if 'results' not in st.session_state:
     st.session_state.results = None
+if "chat_open" not in st.session_state:
+    st.session_state.chat_open = False
+
+chatbot = Chatbot()
+create_template_files()
 
 # Header
 st.markdown("""
@@ -691,6 +822,54 @@ if process_button:
             <strong>Missing Files:</strong> Please upload both SMS and Tally files to begin reconciliation.
         </div>
         """, unsafe_allow_html=True)
+
+chatbot.render_chat_button()
+
+if st.session_state.get("chat_open", False):
+    with st.container():
+        st.markdown("""
+        <div style='position: fixed; bottom: 100px; right: 20px; width: 400px; height: 500px; 
+                   background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+                   z-index: 10000; border: 1px solid #e8ecef;'>
+        """, unsafe_allow_html=True)
+
+        col1, col2, col3 = st.columns([4, 2, 1])
+        with col1:
+            st.markdown("""
+            <div style='padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                     color: white; font-weight: 600; border-radius: 15px 15px 0 0;'>
+                🤖 Reconciliation Assistant
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col3:
+            if st.button("×", key="close_chat", help="Close chat"):
+                st.session_state["chat_open"] = False
+                st.rerun()
+
+        chatbot.render_chat_interface()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+# ---------------------------------------------------------------
+
+
+# ---------------------- CHATBOT DOWNLOAD HANDLER -----------------------
+if "trigger_download" in st.session_state:
+    file_info = st.session_state["trigger_download"]
+
+    if os.path.exists(file_info.get("local_path", "")):
+        with open(file_info["local_path"], "rb") as file:
+            data = file.read()
+
+        st.download_button(
+            label=f"Click to download {file_info['filename']}",
+            data=data,
+            file_name=file_info["filename"],
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="auto_download"
+        )
+
+    del st.session_state["trigger_download"]
 
 # Footer
 st.markdown("""
