@@ -5,741 +5,672 @@ import os
 import base64
 from datetime import datetime
 from automation import SMSTallyAutomation
+import plotly.graph_objects as go
+import plotly.express as px
+
+# Function to load custom font
+def load_font(font_path):
+    with open(font_path, "rb") as f:
+        font_data = f.read()
+    font_b64 = base64.b64encode(font_data).decode()
+    return font_b64
+
+# Load your custom font (adjust path as needed)
+FONT_PATH = "fonts/ClashGrotesk-Regular.ttf"
+font_b64 = None
+if os.path.exists(FONT_PATH):
+    try:
+        font_b64 = load_font(FONT_PATH)
+    except Exception as e:
+        st.warning(f"Could not load custom font: {e}")
 
 # Page configuration
 st.set_page_config(
     page_title="SMS & Tally Reconciliation Pro",
-    page_icon="🔄",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Load custom font function
-def load_font(font_path):
-    if os.path.exists(font_path):
-        try:
-            with open(font_path, "rb") as f:
-                font_data = f.read()
-            return base64.b64encode(font_data).decode()
-        except:
-            return None
-    return None
-
 # Enhanced CSS with modern design
-FONT_PATH = "fonts/ClashGrotesk-Regular.ttf"
-font_b64 = load_font(FONT_PATH)
-
 if font_b64:
-    font_family = f"""
-    @font-face {{
-        font-family: 'ClashGrotesk';
-        src: url(data:font/ttf;base64,{font_b64}) format('truetype');
-        font-weight: normal;
-        font-style: normal;
-    }}
-    * {{
-        font-family: 'ClashGrotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    }}
+    custom_css = f"""
+    <style>
+        @font-face {{
+            font-family: 'ClashGrotesk';
+            src: url(data:font/ttf;base64,{font_b64}) format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }}
+        
+        * {{
+            font-family: 'ClashGrotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }}
+        
+        /* Modern gradient background */
+        .stApp {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }}
+        
+        /* Main content container */
+        .main .block-container {{
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-top: 2rem;
+        }}
+        
+        /* Sidebar styling */
+        [data-testid="stSidebar"] {{
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }}
+        
+        [data-testid="stSidebar"] * {{
+            color: white !important;
+        }}
+        
+        /* Header styling */
+        .main-header {{
+            font-family: 'ClashGrotesk', sans-serif;
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }}
+        
+        .sub-header {{
+            font-family: 'ClashGrotesk', sans-serif;
+            font-size: 1.1rem;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }}
+        
+        /* Enhanced metric cards */
+        [data-testid="stMetricValue"] {{
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }}
+        
+        /* File uploader styling */
+        [data-testid="stFileUploader"] {{
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px dashed #667eea;
+            transition: all 0.3s ease;
+        }}
+        
+        [data-testid="stFileUploader"]:hover {{
+            border-color: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }}
+        
+        /* Button styling */
+        .stButton > button {{
+            font-family: 'ClashGrotesk', sans-serif;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 32px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }}
+        
+        .stButton > button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }}
+        
+        /* Download button styling */
+        .stDownloadButton > button {{
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }}
+        
+        .stDownloadButton > button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(86, 171, 47, 0.4);
+        }}
+        
+        /* Status cards */
+        .status-card {{
+            background: white;
+            border-radius: 15px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-left: 5px solid #667eea;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+        }}
+        
+        .status-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }}
+        
+        .success-card {{
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left: 5px solid #28a745;
+        }}
+        
+        .warning-card {{
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+            border-left: 5px solid #ffc107;
+        }}
+        
+        .info-card {{
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            border-left: 5px solid #17a2b8;
+        }}
+        
+        /* Tab styling */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }}
+        
+        .stTabs [data-baseweb="tab"] {{
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }}
+        
+        /* DataFrames */
+        [data-testid="stDataFrame"] {{
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }}
+        
+        /* Info boxes */
+        .info-box {{
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #2196f3;
+        }}
+        
+        /* Progress indicators */
+        .stProgress > div > div {{
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }}
+        
+        /* Sidebar elements */
+        [data-testid="stSidebar"] .stNumberInput input,
+        [data-testid="stSidebar"] .stCheckbox {{
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }}
+        
+        /* Footer */
+        .footer {{
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            margin-top: 40px;
+        }}
+        
+        /* Animation for success */
+        @keyframes slideIn {{
+            from {{
+                opacity: 0;
+                transform: translateY(20px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0);
+            }}
+        }}
+        
+        .animate-in {{
+            animation: slideIn 0.5s ease-out;
+        }}
+    </style>
     """
 else:
-    font_family = ""
-
-custom_css = f"""
-<style>
-    {font_family}
-    
-    /* Modern color scheme */
-    :root {{
-        --primary-color: #6366f1;
-        --secondary-color: #8b5cf6;
-        --success-color: #10b981;
-        --warning-color: #f59e0b;
-        --error-color: #ef4444;
-        --bg-light: #f8fafc;
-        --text-dark: #1e293b;
-        --text-light: #64748b;
-    }}
-    
-    /* Hide Streamlit branding */
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    
-    /* Main container styling */
-    .block-container {{
-        padding: 2rem 3rem;
-        max-width: 1400px;
-    }}
-    
-    /* Animated gradient header */
-    .hero-header {{
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 3rem 2rem;
-        border-radius: 20px;
-        text-align: center;
-        color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-        animation: fadeIn 0.8s ease-in;
-    }}
-    
-    .hero-title {{
-        font-size: 2.8rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }}
-    
-    .hero-subtitle {{
-        font-size: 1.2rem;
-        opacity: 0.95;
-        font-weight: 400;
-    }}
-    
-    @keyframes fadeIn {{
-        from {{ opacity: 0; transform: translateY(-20px); }}
-        to {{ opacity: 1; transform: translateY(0); }}
-    }}
-    
-    /* Modern card design */
-    .upload-card {{
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
-        height: 100%;
-    }}
-    
-    .upload-card:hover {{
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-        transform: translateY(-2px);
-    }}
-    
-    .card-header {{
-        font-size: 1.3rem;
-        font-weight: 600;
-        color: var(--text-dark);
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }}
-    
-    .card-description {{
-        color: var(--text-light);
-        font-size: 0.9rem;
-        margin-bottom: 1.5rem;
-        line-height: 1.5;
-    }}
-    
-    /* Metrics cards */
-    .metric-card {{
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        color: white;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        transition: transform 0.2s ease;
-    }}
-    
-    .metric-card:hover {{
-        transform: scale(1.05);
-    }}
-    
-    .metric-value {{
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
-    }}
-    
-    .metric-label {{
-        font-size: 0.9rem;
-        opacity: 0.9;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }}
-    
-    /* Status badges */
-    .status-badge {{
-        display: inline-block;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.9rem;
-    }}
-    
-    .status-success {{
-        background: #d1fae5;
-        color: #065f46;
-    }}
-    
-    .status-warning {{
-        background: #fef3c7;
-        color: #92400e;
-    }}
-    
-    .status-error {{
-        background: #fee2e2;
-        color: #991b1b;
-    }}
-    
-    /* Sidebar styling */
-    .css-1d391kg {{
-        background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-    }}
-    
-    /* Enhanced buttons */
-    .stButton > button {{
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        transition: all 0.3s ease;
-    }}
-    
-    .stButton > button:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
-    }}
-    
-    /* Download button */
-    .stDownloadButton > button {{
-        background: white;
-        color: var(--primary-color);
-        border: 2px solid var(--primary-color);
-        font-weight: 600;
-    }}
-    
-    .stDownloadButton > button:hover {{
-        background: var(--primary-color);
-        color: white;
-    }}
-    
-    /* Progress indicator */
-    .progress-step {{
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        background: white;
-        border-radius: 10px;
-        margin-bottom: 0.5rem;
-        border-left: 4px solid var(--primary-color);
-    }}
-    
-    /* Info boxes */
-    .info-box {{
-        background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
-        border-left: 4px solid var(--primary-color);
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }}
-    
-    .success-box {{
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 4px solid var(--success-color);
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }}
-    
-    .warning-box {{
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 4px solid var(--warning-color);
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }}
-    
-    /* Tab styling */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 2rem;
-        background: white;
-        padding: 1rem;
-        border-radius: 10px;
-    }}
-    
-    .stTabs [data-baseweb="tab"] {{
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-    }}
-    
-    /* File uploader styling */
-    .uploadedFile {{
-        border: 2px dashed var(--primary-color);
-        border-radius: 10px;
-        padding: 1rem;
-    }}
-    
-    /* Dataframe styling */
-    .dataframe {{
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }}
-    
-    /* Footer */
-    .footer {{
-        text-align: center;
-        padding: 3rem 0 2rem 0;
-        color: var(--text-light);
-        border-top: 1px solid #e2e8f0;
-        margin-top: 4rem;
-    }}
-    
-    .footer-tagline {{
-        font-size: 1.1rem;
-        color: var(--text-dark);
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }}
-</style>
-"""
+    # Simplified fallback CSS
+    custom_css = """
+    <style>
+        .stApp {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .main .block-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .main-header {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        .stButton > button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 32px;
+            font-weight: 600;
+        }
+    </style>
+    """
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# Hero Header
-st.markdown("""
-<div class="hero-header">
-    <div class="hero-title">🔄 SMS & Tally Reconciliation Pro</div>
-    <div class="hero-subtitle">Intelligent data matching with GST verification • Save hours of manual work</div>
-</div>
-""", unsafe_allow_html=True)
+# Header with icon
+st.markdown('''
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+        <h1 class="main-header">SMS & Tally Reconciliation Pro</h1>
+        <p class="sub-header">Intelligent matching with GST verification powered by automation</p>
+    </div>
+''', unsafe_allow_html=True)
 
-# Initialize session state
-if 'processed' not in st.session_state:
-    st.session_state.processed = False
-if 'sms_df' not in st.session_state:
-    st.session_state.sms_df = None
-if 'tally_df' not in st.session_state:
-    st.session_state.tally_df = None
-
-# Sidebar
+# Sidebar with enhanced design
 with st.sidebar:
     st.markdown("### ⚙️ Configuration")
+    st.markdown("---")
     
-    with st.expander("📊 Matching Parameters", expanded=True):
-        tolerance_days = st.slider(
-            "Date Tolerance (days)",
-            min_value=0,
-            max_value=365,
+    with st.expander("📅 Matching Parameters", expanded=True):
+        tolerance_days = st.number_input(
+            "Date Tolerance (Days)", 
+            min_value=0, 
+            max_value=365, 
             value=30,
-            help="Maximum days between transactions to consider as a match"
+            help="Maximum days difference for matching records"
         )
         
         tolerance_amount = st.number_input(
-            "Amount Tolerance (₹)",
-            min_value=0.0,
+            "Amount Tolerance (₹)", 
+            min_value=0.0, 
             value=0.0,
             step=0.1,
             format="%.2f",
-            help="Maximum amount difference to consider as a match"
+            help="Maximum amount difference for matching"
         )
     
     with st.expander("🔍 GST Verification", expanded=True):
         check_gst = st.checkbox(
-            "Enable GST Verification",
+            "Enable GST Verification", 
             value=True,
-            help="Cross-check service claims with GST files"
+            help="Verify service claims against GST files"
         )
     
     st.markdown("---")
     
     st.markdown("""
     <div class="info-box">
-        <h4 style="margin-top: 0;">📝 Quick Guide</h4>
-        <ol style="margin-bottom: 0; padding-left: 1.2rem;">
-            <li>Upload your SMS Excel file</li>
-            <li>Upload your Tally Excel file</li>
+        <h4 style="margin-top: 0;">📋 Quick Guide</h4>
+        <ol style="padding-left: 20px;">
+            <li>Upload SMS Excel file</li>
+            <li>Upload Tally Excel file</li>
             <li>Add GST files (optional)</li>
-            <li>Review settings</li>
-            <li>Click Process & Reconcile</li>
+            <li>Configure parameters</li>
+            <li>Click Process & Download</li>
         </ol>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.caption("💡 **Tip:** Hover over any ⓘ icon for detailed help")
 
-# Main content - Step-by-step workflow
-st.markdown("## 📤 Step 1: Upload Files")
+# Main content with enhanced cards
+st.markdown("### 📤 Upload Your Files")
 
-# File upload section
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2, gap="large")
 
 with col1:
     st.markdown("""
-    <div class="upload-card">
-        <div class="card-header">📱 SMS Data File</div>
-        <div class="card-description">
-            Upload your SMS transaction export<br>
-            <strong>Required columns:</strong> TransactionDate, TransactionMode, Description, Remarks, Debit, Credit
-        </div>
+    <div class="status-card">
+        <h4 style="color: #667eea; margin-top: 0;">📱 SMS Data</h4>
+        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+            Required: TransactionDate, TransactionMode, Description, Remarks, Debit, Credit
+        </p>
     </div>
     """, unsafe_allow_html=True)
     
     sms_file = st.file_uploader(
-        "Choose SMS Excel file",
+        "Drop SMS file here",
         type=['xlsx', 'xls', 'xlsm'],
         key="sms_uploader",
         label_visibility="collapsed"
     )
-    
     if sms_file:
-        st.success(f"✅ Loaded: {sms_file.name}")
-        file_size = len(sms_file.getvalue()) / 1024
-        st.caption(f"File size: {file_size:.2f} KB")
+        st.success(f"✓ {sms_file.name} uploaded")
 
 with col2:
     st.markdown("""
-    <div class="upload-card">
-        <div class="card-header">📊 Tally Data File</div>
-        <div class="card-description">
-            Upload your Tally export file<br>
-            <strong>Required columns:</strong> Date, Particulars, Vch Type, Vch No., Debit, Credit
-        </div>
+    <div class="status-card">
+        <h4 style="color: #764ba2; margin-top: 0;">📚 Tally Data</h4>
+        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+            Required: Date, Particulars, Vch Type, Vch No., Debit, Credit
+        </p>
     </div>
     """, unsafe_allow_html=True)
     
     tally_file = st.file_uploader(
-        "Choose Tally Excel file",
+        "Drop Tally file here",
         type=['xlsx', 'xls', 'xlsm'],
         key="tally_uploader",
         label_visibility="collapsed"
     )
-    
     if tally_file:
-        st.success(f"✅ Loaded: {tally_file.name}")
-        file_size = len(tally_file.getvalue()) / 1024
-        st.caption(f"File size: {file_size:.2f} KB")
+        st.success(f"✓ {tally_file.name} uploaded")
 
-# GST files upload
-st.markdown("### 📋 GST Files (Optional)")
+st.markdown("<br>", unsafe_allow_html=True)
+
 st.markdown("""
-<div class="upload-card" style="padding: 1.5rem;">
-    <div class="card-description" style="margin-bottom: 1rem;">
-        Upload GST 2A/2B files for verification • Supports multiple files • Helps identify service claims
-    </div>
+<div class="status-card info-card">
+    <h4 style="margin-top: 0;">📋 GST Files (Optional)</h4>
+    <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+        Upload GST 2A/2B files for invoice verification
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
 gst_files = st.file_uploader(
-    "Choose GST Excel files",
-    type=['xlsx', 'xls', 'xlsm'],
+    "Drop GST files here",
+    type=['xlsx', 'xls', 'xlsm'], 
     accept_multiple_files=True,
     key="gst_uploader",
     label_visibility="collapsed"
 )
-
 if gst_files:
-    st.success(f"✅ Loaded {len(gst_files)} GST file(s)")
+    st.success(f"✓ {len(gst_files)} GST file(s) uploaded")
 
-st.markdown("---")
+st.markdown("<br>", unsafe_allow_html=True)
 
-# Process button section
-st.markdown("## 🚀 Step 2: Process & Reconcile")
-
+# Process button with enhanced styling
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    process_button = st.button(
-        "🔄 Process & Reconcile Data",
-        type="primary",
-        use_container_width=True,
-        disabled=not (sms_file and tally_file)
-    )
+    process_button = st.button("🚀 Process & Match Data", type="primary", use_container_width=True)
 
-if not (sms_file and tally_file):
-    st.info("👆 Please upload both SMS and Tally files to begin processing")
-
-# Processing logic
 if process_button:
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    try:
-        # Step 1: Initialize
-        status_text.text("🔧 Initializing automation...")
-        progress_bar.progress(10)
-        automation = SMSTallyAutomation(
-            tolerance_days=tolerance_days,
-            tolerance_amount=tolerance_amount
-        )
-        
-        # Step 2: Read SMS
-        status_text.text("📱 Reading SMS data...")
-        progress_bar.progress(25)
-        sms_df = automation.read_excel_file(sms_file)
-        sms_df = automation.process_sms_data(sms_df)
-        
-        # Step 3: Read Tally
-        status_text.text("📊 Reading Tally data...")
-        progress_bar.progress(40)
-        tally_df = automation.read_excel_file(tally_file)
-        tally_df = automation.process_tally_data(tally_df)
-        
-        # Step 4: Match data
-        status_text.text("🔍 Matching transactions...")
-        progress_bar.progress(60)
-        sms_df, tally_df = automation.match_sms_tally_data(sms_df, tally_df)
-        
-        # Step 5: GST verification
-        if check_gst and gst_files:
-            status_text.text("✓ Verifying GST data...")
-            progress_bar.progress(80)
-            sms_df = automation.check_gst_for_service_claims(sms_df, gst_files)
-            tally_df = automation.check_gst_for_service_claims(tally_df, gst_files)
-        
-        # Step 6: Complete
-        status_text.text("✅ Processing complete!")
-        progress_bar.progress(100)
-        
-        # Store in session state
-        st.session_state.processed = True
-        st.session_state.sms_df = sms_df
-        st.session_state.tally_df = tally_df
-        st.session_state.stats = automation.get_summary_stats(sms_df, tally_df)
-        
-        # Clear progress indicators
-        progress_bar.empty()
-        status_text.empty()
-        
-        st.success("🎉 Reconciliation completed successfully!")
-        st.balloons()
-        
-    except Exception as e:
-        progress_bar.empty()
-        status_text.empty()
-        st.error(f"❌ Error during processing: {str(e)}")
-        st.exception(e)
-
-# Results section
-if st.session_state.processed:
-    st.markdown("---")
-    st.markdown("## 📈 Step 3: Review Results")
-    
-    stats = st.session_state.stats
-    sms_df = st.session_state.sms_df
-    tally_df = st.session_state.tally_df
-    
-    # Summary metrics
-    st.markdown("### Summary Dashboard")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value">{stats['matched_sms_count']:,}</div>
-            <div class="metric-label">Matched SMS</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value">{stats['matched_tally_count']:,}</div>
-            <div class="metric-label">Matched Tally</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value">₹{stats['matched_sms_sum']/100000:.2f}L</div>
-            <div class="metric-label">SMS Amount</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col4:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value">₹{stats['matched_tally_sum']/100000:.2f}L</div>
-            <div class="metric-label">Tally Amount</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Check for discrepancies
-    if abs(stats['matched_sms_sum'] - stats['matched_tally_sum']) > 0.01:
+    if sms_file and tally_file:
+        with st.spinner("🔄 Processing your data... Please wait"):
+            progress_bar = st.progress(0)
+            
+            try:
+                # Initialize automation
+                automation = SMSTallyAutomation(
+                    tolerance_days=tolerance_days,
+                    tolerance_amount=tolerance_amount
+                )
+                progress_bar.progress(10)
+                
+                # Process SMS data
+                sms_df = automation.read_excel_file(sms_file)
+                sms_df = automation.process_sms_data(sms_df)
+                progress_bar.progress(30)
+                
+                # Process Tally data
+                tally_df = automation.read_excel_file(tally_file)
+                tally_df = automation.process_tally_data(tally_df)
+                progress_bar.progress(50)
+                
+                # Match data
+                sms_df, tally_df = automation.match_sms_tally_data(sms_df, tally_df)
+                progress_bar.progress(70)
+                
+                # Check GST if enabled
+                if check_gst and gst_files:
+                    sms_df = automation.check_gst_for_service_claims(sms_df, gst_files)
+                    tally_df = automation.check_gst_for_service_claims(tally_df, gst_files)
+                progress_bar.progress(90)
+                
+                # Get summary statistics
+                stats = automation.get_summary_stats(sms_df, tally_df)
+                progress_bar.progress(100)
+                
+                # Success message
+                st.markdown("""
+                <div class="status-card success-card animate-in">
+                    <h3 style="margin-top: 0;">✅ Processing Complete!</h3>
+                    <p>Your data has been successfully matched and reconciled.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Display summary statistics with visual metrics
+                st.markdown("### 📊 Reconciliation Summary")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric(
+                        "✅ Matched SMS", 
+                        f"{stats['matched_sms_count']:,}",
+                        delta=f"{(stats['matched_sms_count']/stats['total_sms_sum']*100):.1f}%" if stats['total_sms_sum'] > 0 else "0%"
+                    )
+                    st.metric(
+                        "❌ Unmatched SMS", 
+                        f"{stats['unmatched_sms_count']:,}"
+                    )
+                
+                with col2:
+                    st.metric(
+                        "✅ Matched Tally", 
+                        f"{stats['matched_tally_count']:,}",
+                        delta=f"{(stats['matched_tally_count']/stats['total_tally_sum']*100):.1f}%" if stats['total_tally_sum'] > 0 else "0%"
+                    )
+                    st.metric(
+                        "❌ Unmatched Tally", 
+                        f"{stats['unmatched_tally_count']:,}"
+                    )
+                
+                with col3:
+                    st.metric("💰 Matched SMS", f"₹{stats['matched_sms_sum']:,.2f}")
+                    st.metric("📊 Total SMS", f"₹{stats['total_sms_sum']:,.2f}")
+                
+                with col4:
+                    st.metric("💰 Matched Tally", f"₹{stats['matched_tally_sum']:,.2f}")
+                    st.metric("📊 Total Tally", f"₹{stats['total_tally_sum']:,.2f}")
+                
+                # Visual representation
+                if stats['matched_sms_count'] > 0 or stats['unmatched_sms_count'] > 0:
+                    st.markdown("### 📈 Visual Analysis")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        # SMS matching pie chart
+                        fig1 = go.Figure(data=[go.Pie(
+                            labels=['Matched', 'Unmatched'],
+                            values=[stats['matched_sms_count'], stats['unmatched_sms_count']],
+                            hole=.4,
+                            marker_colors=['#28a745', '#dc3545']
+                        )])
+                        fig1.update_layout(
+                            title="SMS Matching Status",
+                            showlegend=True,
+                            height=300
+                        )
+                        st.plotly_chart(fig1, use_container_width=True)
+                    
+                    with col2:
+                        # Tally matching pie chart
+                        fig2 = go.Figure(data=[go.Pie(
+                            labels=['Matched', 'Unmatched'],
+                            values=[stats['matched_tally_count'], stats['unmatched_tally_count']],
+                            hole=.4,
+                            marker_colors=['#667eea', '#ffc107']
+                        )])
+                        fig2.update_layout(
+                            title="Tally Matching Status",
+                            showlegend=True,
+                            height=300
+                        )
+                        st.plotly_chart(fig2, use_container_width=True)
+                
+                # Check for discrepancies
+                if abs(stats['matched_sms_sum'] - stats['matched_tally_sum']) > 0.01:
+                    st.markdown("""
+                    <div class="status-card warning-card">
+                        <h4 style="margin-top: 0;">⚠️ Amount Mismatch Detected</h4>
+                        <p>The sum of matched SMS and Tally records differs. Please review the data.</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Results tabs with enhanced design
+                tab1, tab2, tab3 = st.tabs(["📱 SMS Results", "📚 Tally Results", "📊 Analytics"])
+                
+                with tab1:
+                    st.markdown("#### SMS Transaction Details")
+                    
+                    matched_count = len(sms_df[sms_df['Status'] == 'Tallied'])
+                    unmatched_count = len(sms_df[sms_df['Status'] == 'Not Tallied'])
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.info(f"✅ **Matched:** {matched_count} records")
+                    with col2:
+                        st.warning(f"❌ **Unmatched:** {unmatched_count} records")
+                    
+                    # Display data
+                    sms_display = sms_df.copy()
+                    for col in sms_display.columns:
+                        if sms_display[col].dtype == 'object':
+                            sms_display[col] = sms_display[col].astype(str)
+                    
+                    st.dataframe(sms_display, use_container_width=True, height=400)
+                    
+                    # Download button
+                    csv = sms_df.to_csv(index=False)
+                    st.download_button(
+                        label="⬇️ Download SMS Results",
+                        data=csv,
+                        file_name=f"sms_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
+                
+                with tab2:
+                    st.markdown("#### Tally Transaction Details")
+                    
+                    matched_count = len(tally_df[tally_df['Status'] == 'Tallied'])
+                    unmatched_count = len(tally_df[tally_df['Status'] == 'Not Tallied'])
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.info(f"✅ **Matched:** {matched_count} records")
+                    with col2:
+                        st.warning(f"❌ **Unmatched:** {unmatched_count} records")
+                    
+                    # Display data
+                    tally_display = tally_df.copy()
+                    for col in tally_display.columns:
+                        if tally_display[col].dtype == 'object':
+                            tally_display[col] = tally_display[col].astype(str)
+                    
+                    st.dataframe(tally_display, use_container_width=True, height=400)
+                    
+                    # Download button
+                    csv = tally_df.to_csv(index=False)
+                    st.download_button(
+                        label="⬇️ Download Tally Results",
+                        data=csv,
+                        file_name=f"tally_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
+                
+                with tab3:
+                    st.markdown("#### Detailed Analytics")
+                    
+                    if check_gst and 'GST Status' in sms_df.columns:
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.markdown("**SMS GST Verification**")
+                            gst_counts = sms_df['GST Status'].value_counts()
+                            st.bar_chart(gst_counts)
+                        
+                        with col2:
+                            st.markdown("**Tally GST Verification**")
+                            if 'GST Status' in tally_df.columns:
+                                gst_counts = tally_df['GST Status'].value_counts()
+                                st.bar_chart(gst_counts)
+                    
+                    # Additional insights
+                    st.markdown("**Matching Summary**")
+                    summary_data = {
+                        'Category': ['SMS Matched', 'SMS Unmatched', 'Tally Matched', 'Tally Unmatched'],
+                        'Count': [
+                            stats['matched_sms_count'],
+                            stats['unmatched_sms_count'],
+                            stats['matched_tally_count'],
+                            stats['unmatched_tally_count']
+                        ],
+                        'Amount': [
+                            stats['matched_sms_sum'],
+                            stats['total_sms_sum'] - stats['matched_sms_sum'],
+                            stats['matched_tally_sum'],
+                            stats['total_tally_sum'] - stats['matched_tally_sum']
+                        ]
+                    }
+                    st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
+                
+            except Exception as e:
+                st.markdown(f"""
+                <div class="status-card warning-card">
+                    <h4 style="margin-top: 0;">❌ Processing Error</h4>
+                    <p>{str(e)}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.exception(e)
+    else:
         st.markdown("""
-        <div class="warning-box">
-            ⚠️ <strong>Amount Mismatch Detected</strong><br>
-            The sum of matched SMS and Tally records differs. Please review the unmatched transactions.
+        <div class="status-card warning-card">
+            <h4 style="margin-top: 0;">⚠️ Missing Files</h4>
+            <p>Please upload both SMS and Tally files to proceed with reconciliation.</p>
         </div>
         """, unsafe_allow_html=True)
-    
-    # Detailed results tabs
-    tab1, tab2, tab3 = st.tabs(["📱 SMS Results", "📊 Tally Results", "📋 GST Summary"])
-    
-    with tab1:
-        st.markdown("### SMS Transaction Results")
-        
-        # Status summary
-        col1, col2, col3 = st.columns(3)
-        matched = len(sms_df[sms_df['Status'] == 'Tallied'])
-        unmatched = len(sms_df[sms_df['Status'] == 'Not Tallied'])
-        match_rate = (matched / len(sms_df) * 100) if len(sms_df) > 0 else 0
-        
-        with col1:
-            st.metric("Total Records", f"{len(sms_df):,}")
-        with col2:
-            st.metric("Matched", f"{matched:,}", f"{match_rate:.1f}%")
-        with col3:
-            st.metric("Unmatched", f"{unmatched:,}")
-        
-        # Filters
-        col1, col2 = st.columns(2)
-        with col1:
-            status_filter = st.selectbox(
-                "Filter by Status",
-                ["All", "Tallied", "Not Tallied"],
-                key="sms_status_filter"
-            )
-        with col2:
-            search_term = st.text_input(
-                "Search in Description",
-                key="sms_search",
-                placeholder="Enter keywords..."
-            )
-        
-        # Apply filters
-        filtered_sms = sms_df.copy()
-        if status_filter != "All":
-            filtered_sms = filtered_sms[filtered_sms['Status'] == status_filter]
-        if search_term:
-            filtered_sms = filtered_sms[
-                filtered_sms.astype(str).apply(
-                    lambda row: row.str.contains(search_term, case=False, na=False).any(),
-                    axis=1
-                )
-            ]
-        
-        # Display data
-        sms_display = filtered_sms.copy()
-        for col in sms_display.columns:
-            if sms_display[col].dtype == 'object':
-                sms_display[col] = sms_display[col].astype(str)
-        
-        st.dataframe(
-            sms_display,
-            use_container_width=True,
-            height=450,
-            hide_index=True
-        )
-        
-        # Download button
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            csv = sms_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"sms_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-    
-    with tab2:
-        st.markdown("### Tally Transaction Results")
-        
-        # Status summary
-        col1, col2, col3 = st.columns(3)
-        matched = len(tally_df[tally_df['Status'] == 'Tallied'])
-        unmatched = len(tally_df[tally_df['Status'] == 'Not Tallied'])
-        match_rate = (matched / len(tally_df) * 100) if len(tally_df) > 0 else 0
-        
-        with col1:
-            st.metric("Total Records", f"{len(tally_df):,}")
-        with col2:
-            st.metric("Matched", f"{matched:,}", f"{match_rate:.1f}%")
-        with col3:
-            st.metric("Unmatched", f"{unmatched:,}")
-        
-        # Filters
-        col1, col2 = st.columns(2)
-        with col1:
-            status_filter = st.selectbox(
-                "Filter by Status",
-                ["All", "Tallied", "Not Tallied"],
-                key="tally_status_filter"
-            )
-        with col2:
-            search_term = st.text_input(
-                "Search in Particulars",
-                key="tally_search",
-                placeholder="Enter keywords..."
-            )
-        
-        # Apply filters
-        filtered_tally = tally_df.copy()
-        if status_filter != "All":
-            filtered_tally = filtered_tally[filtered_tally['Status'] == status_filter]
-        if search_term:
-            filtered_tally = filtered_tally[
-                filtered_tally.astype(str).apply(
-                    lambda row: row.str.contains(search_term, case=False, na=False).any(),
-                    axis=1
-                )
-            ]
-        
-        # Display data
-        tally_display = filtered_tally.copy()
-        for col in tally_display.columns:
-            if tally_display[col].dtype == 'object':
-                tally_display[col] = tally_display[col].astype(str)
-        
-        st.dataframe(
-            tally_display,
-            use_container_width=True,
-            height=450,
-            hide_index=True
-        )
-        
-        # Download button
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            csv = tally_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"tally_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-    
-    with tab3:
-        st.markdown("### GST Verification Summary")
-        
-        if check_gst and 'GST Status' in sms_df.columns:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("#### SMS GST Status")
-                sms_gst_counts = sms_df['GST Status'].value_counts()
-                for status, count in sms_gst_counts.items():
-                    percentage = (count / len(sms_df) * 100)
-                    st.metric(status, f"{count:,}", f"{percentage:.1f}%")
-            
-            with col2:
-                st.markdown("#### Tally GST Status")
-                tally_gst_counts = tally_df['GST Status'].value_counts()
-                for status, count in tally_gst_counts.items():
-                    percentage = (count / len(tally_df) * 100)
-                    st.metric(status, f"{count:,}", f"{percentage:.1f}%")
-        else:
-            st.info("GST verification was not enabled or no GST files were uploaded.")
 
-# Footer
+# Enhanced footer
+st.markdown("---")
 st.markdown("""
 <div class="footer">
-    <div class="footer-tagline">Step into the future - Embrace learning over manual tasks</div>
-    <p><strong>Embrace Automation</strong> by Harpinder Singh</p>
-    <p>For Support: <a href="mailto:harpinder.singh@rvsolutions.in">harpinder.singh@rvsolutions.in</a></p>
+    <h3 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem;">
+        Step Into The Future
+    </h3>
+    <p style="color: #6b7280; font-size: 1.1rem; margin-bottom: 0.5rem;">
+        Embrace learning over manual tasks
+    </p>
+    <p style="color: #374151; font-weight: 600; font-size: 1.2rem; margin-bottom: 1.5rem;">
+        Embrace Automation - Harpinder Singh
+    </p>
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; padding: 15px; display: inline-block;">
+        <p style="margin: 0; font-weight: 600;">
+            📧 Support: harpinder.singh@rvsolutions.in
+        </p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
