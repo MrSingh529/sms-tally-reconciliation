@@ -112,56 +112,99 @@ class SMSTallyAutomation:
 
         # Add columns to track whether transaction is Debit or Credit
         sms_df['TransactionDirection'] = sms_df.apply(
-            lambda row: 'Credit' if pd.notna(row.get('Credit')) and row.get('Credit') != 0 
-            else 'Debit' if pd.notna(row.get('Debit')) and row.get('Debit') != 0 
+            lambda row: 'Credit' if pd.notna(row.get('Credit')) and float(row.get('Credit', 0)) != 0 
+            else 'Debit' if pd.notna(row.get('Debit')) and float(row.get('Debit', 0)) != 0 
             else 'Unknown', axis=1
         )
         
         tally_df['TransactionDirection'] = tally_df.apply(
-            lambda row: 'Credit' if pd.notna(row.get('Credit')) and row.get('Credit') != 0 
-            else 'Debit' if pd.notna(row.get('Debit')) and row.get('Debit') != 0 
+            lambda row: 'Credit' if pd.notna(row.get('Credit')) and float(row.get('Credit', 0)) != 0 
+            else 'Debit' if pd.notna(row.get('Debit')) and float(row.get('Debit', 0)) != 0 
             else 'Unknown', axis=1
         )
 
+        # Convert to datetime for proper comparison
+        sms_df['TransactionDate'] = pd.to_datetime(sms_df['TransactionDate'], errors='coerce')
+        tally_df['Date'] = pd.to_datetime(tally_df['Date'], errors='coerce')
+        
+        # Round amounts for consistent comparison
+        sms_df['Amount'] = sms_df['Amount'].round(2)
+        tally_df['Amount'] = tally_df['Amount'].round(2)
+
+        # First, try to match exact amount + date within tolerance + same direction
         for idx, tally_row in tally_df.iterrows():
-            # First Priority: Direct amount and date match with same direction (Credit-Credit or Debit-Debit)
-            direct_matches = sms_df[
-                (sms_df['TransactionDate'].between(tally_row['Date'] - pd.Timedelta(days=self.tolerance_days), 
-                                                tally_row['Date'] + pd.Timedelta(days=self.tolerance_days))) &
+            if idx in matched_tally_indices:
+                continue
+                
+            # Check if we have valid data for matching
+            if pd.isna(tally_row['Date']) or pd.isna(tally_row['Amount']):
+                continue
+                
+            # Define date range for tolerance
+            min_date = tally_row['Date'] - pd.Timedelta(days=self.tolerance_days)
+            max_date = tally_row['Date'] + pd.Timedelta(days=self.tolerance_days)
+            
+            # Find SMS transactions that are:
+            # 1. Within date tolerance
+            # 2. Amount matches (within tolerance_amount)
+            # 3. Same transaction direction (Credit-Credit or Debit-Debit)
+            # 4. Not already matched
+            potential_matches = sms_df[
+                (sms_df['Status'] == 'Not Tallied') &
+                (sms_df['TransactionDate'].between(min_date, max_date, inclusive='both')) &
                 (abs(sms_df['Amount'] - tally_row['Amount']) <= self.tolerance_amount) &
                 (sms_df['TransactionDirection'] == tally_row['TransactionDirection']) &
-                (sms_df['TransactionDirection'] != 'Unknown') &  # Ensure valid direction
-                (sms_df['Status'] == 'Not Tallied')
+                (sms_df['TransactionDirection'] != 'Unknown')
             ]
             
-            if not direct_matches.empty:
-                # If multiple direct matches found, pick the one with closest date
-                direct_matches['DateDiff'] = abs((direct_matches['TransactionDate'] - tally_row['Date']).dt.days)
-                best_direct_match = direct_matches.loc[direct_matches['DateDiff'].idxmin()]
-                self.mark_as_tallied(tally_row, best_direct_match, sms_df, tally_df, matched_sms_indices, matched_tally_indices)
+            if not potential_matches.empty:
+                # If multiple matches found, pick the one with closest date
+                potential_matches = potential_matches.copy()
+                potential_matches['DateDiff'] = abs((potential_matches['TransactionDate'] - tally_row['Date']).dt.days)
+                best_match_idx = potential_matches['DateDiff'].idxmin()
+                best_match = sms_df.loc[best_match_idx]
+                
+                # Mark as tallied
+                sms_df.at[best_match_idx, 'Status'] = 'Tallied'
+                tally_df.at[idx, 'Status'] = 'Tallied'
+                
+                # Add remarks about the match
+                sms_df.at[best_match_idx, 'MatchRemarks'] = f"Matched with Tally: Amount {tally_row['Amount']}, Date {tally_row['Date'].strftime('%d-%b-%Y')}"
+                tally_df.at[idx, 'MatchRemarks'] = f"Matched with SMS: Amount {best_match['Amount']}, Date {best_match['TransactionDate'].strftime('%d-%b-%Y')}"
+                
+                matched_sms_indices.add(best_match_idx)
+                matched_tally_indices.add(idx)
                 continue
             
-            # Second Priority: Existing logic with scoring
-            matches = sms_df[
-                (sms_df['TransactionDate'].between(tally_row['Date'] - pd.Timedelta(days=self.tolerance_days), 
-                                                tally_row['Date'] + pd.Timedelta(days=self.tolerance_days))) &
-                (abs(sms_df['Amount'] - tally_row['Amount']) <= self.tolerance_amount) &
-                (sms_df['Status'] == 'Not Tallied')
-            ]
+            # Second Priority: Existing logic with scoring (for non-direct matches)
+            # This includes cases where direction doesn't match or we need fuzzy matching
+            if self.tolerance_amount > 0:  # Only if tolerance is allowed
+                fuzzy_matches = sms_df[
+                    (sms_df['Status'] == 'Not Tallied') &
+                    (sms_df['TransactionDate'].between(min_date, max_date, inclusive='both')) &
+                    (abs(sms_df['Amount'] - tally_row['Amount']) <= self.tolerance_amount)
+                ]
+                
+                if not fuzzy_matches.empty:
+                    best_match = None
+                    highest_score = 0
+                    
+                    for _, sms_row in fuzzy_matches.iterrows():
+                        score = self.calculate_match_score(tally_row, sms_row)
+                        
+                        # Bonus for same transaction direction
+                        if sms_row['TransactionDirection'] == tally_row['TransactionDirection']:
+                            score += 20
+                        
+                        if score > highest_score:
+                            highest_score = score
+                            best_match = sms_row
+                    
+                    if best_match is not None and highest_score > 30:  # Threshold for matching
+                        self.mark_as_tallied(tally_row, best_match, sms_df, tally_df, 
+                                        matched_sms_indices, matched_tally_indices)
 
-            if not matches.empty:
-                best_match = None
-                highest_score = 0
-                for _, sms_row in matches.iterrows():
-                    score = self.calculate_match_score(tally_row, sms_row)
-                    if score > highest_score:
-                        highest_score = score
-                        best_match = sms_row
-
-                if best_match is not None:
-                    self.mark_as_tallied(tally_row, best_match, sms_df, tally_df, matched_sms_indices, matched_tally_indices)
-
-        # Handle split transactions
+        # Handle split transactions (combining multiple SMS transactions into one Tally entry)
         self.handle_split_transactions(sms_df, tally_df, matched_sms_indices, matched_tally_indices)
 
         # Mark remaining records as 'Not Tallied'
@@ -172,14 +215,22 @@ class SMSTallyAutomation:
     
     def calculate_match_score(self, tally_row, sms_row):
         score = 0
+        
+        # Bonus for same transaction direction
+        if sms_row['TransactionDirection'] == tally_row['TransactionDirection']:
+            score += 20
+        
+        # Original scoring logic
         if pd.notna(tally_row['Vch No.']) and tally_row['Vch No.'] != "NAN":
             if tally_row['Vch No.'] in str(sms_row['Description']) or tally_row['Vch No.'] in str(sms_row['Remarks']):
                 score += 50
             else:
                 score += fuzz.partial_ratio(str(tally_row['Vch No.']), str(sms_row['Description'])) * 0.3
                 score += fuzz.partial_ratio(str(tally_row['Vch No.']), str(sms_row['Remarks'])) * 0.2
+        
         if tally_row['Transaction Type'] == sms_row['Transaction Type']:
             score += 30
+        
         return score
     
     def handle_split_transactions(self, sms_df, tally_df, matched_sms_indices, matched_tally_indices):
@@ -205,6 +256,13 @@ class SMSTallyAutomation:
         # Mark both as 'Tallied'
         sms_df.at[sms_df_index, 'Status'] = 'Tallied'
         tally_df.at[tally_df_index, 'Status'] = 'Tallied'
+        
+        # Add matching details
+        date_diff = abs((sms_row['TransactionDate'] - tally_row['Date']).days)
+        direction = "same" if sms_row['TransactionDirection'] == tally_row['TransactionDirection'] else "different"
+        
+        sms_df.at[sms_df_index, 'MatchDetails'] = f"Amount: {tally_row['Amount']}, Date diff: {date_diff} days, Direction: {direction}"
+        tally_df.at[tally_df_index, 'MatchDetails'] = f"Amount: {sms_row['Amount']}, Date diff: {date_diff} days, Direction: {direction}"
 
         matched_sms_indices.add(sms_df_index)
         matched_tally_indices.add(tally_df_index)
