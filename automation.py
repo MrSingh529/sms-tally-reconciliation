@@ -110,10 +110,41 @@ class SMSTallyAutomation:
         matched_sms_indices = set()
         matched_tally_indices = set()
 
+        # Add columns to track whether transaction is Debit or Credit
+        sms_df['TransactionDirection'] = sms_df.apply(
+            lambda row: 'Credit' if pd.notna(row.get('Credit')) and row.get('Credit') != 0 
+            else 'Debit' if pd.notna(row.get('Debit')) and row.get('Debit') != 0 
+            else 'Unknown', axis=1
+        )
+        
+        tally_df['TransactionDirection'] = tally_df.apply(
+            lambda row: 'Credit' if pd.notna(row.get('Credit')) and row.get('Credit') != 0 
+            else 'Debit' if pd.notna(row.get('Debit')) and row.get('Debit') != 0 
+            else 'Unknown', axis=1
+        )
+
         for idx, tally_row in tally_df.iterrows():
+            # First Priority: Direct amount and date match with same direction (Credit-Credit or Debit-Debit)
+            direct_matches = sms_df[
+                (sms_df['TransactionDate'].between(tally_row['Date'] - pd.Timedelta(days=self.tolerance_days), 
+                                                tally_row['Date'] + pd.Timedelta(days=self.tolerance_days))) &
+                (abs(sms_df['Amount'] - tally_row['Amount']) <= self.tolerance_amount) &
+                (sms_df['TransactionDirection'] == tally_row['TransactionDirection']) &
+                (sms_df['TransactionDirection'] != 'Unknown') &  # Ensure valid direction
+                (sms_df['Status'] == 'Not Tallied')
+            ]
+            
+            if not direct_matches.empty:
+                # If multiple direct matches found, pick the one with closest date
+                direct_matches['DateDiff'] = abs((direct_matches['TransactionDate'] - tally_row['Date']).dt.days)
+                best_direct_match = direct_matches.loc[direct_matches['DateDiff'].idxmin()]
+                self.mark_as_tallied(tally_row, best_direct_match, sms_df, tally_df, matched_sms_indices, matched_tally_indices)
+                continue
+            
+            # Second Priority: Existing logic with scoring
             matches = sms_df[
                 (sms_df['TransactionDate'].between(tally_row['Date'] - pd.Timedelta(days=self.tolerance_days), 
-                                                   tally_row['Date'] + pd.Timedelta(days=self.tolerance_days))) &
+                                                tally_row['Date'] + pd.Timedelta(days=self.tolerance_days))) &
                 (abs(sms_df['Amount'] - tally_row['Amount']) <= self.tolerance_amount) &
                 (sms_df['Status'] == 'Not Tallied')
             ]
